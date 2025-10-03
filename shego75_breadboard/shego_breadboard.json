@@ -1,0 +1,144 @@
+{
+    "name": "SHEGO Breadboard",
+    "vendorId": "0xDEAD",
+    "productId": "0x5460",
+    "matrix": {
+        "rows": 4,
+        "cols": 13
+    },
+    "keycodes": [
+        "qmk_lighting"
+    ],
+    "menus": [
+        "qmk_rgb_matrix"
+    ],
+    "customKeycodes": [
+        {
+            "name": "MENU_OPEN",
+            "title": "Menu Open",
+            "shortName": "M_OPEN"
+        },
+        {
+            "name": "MENU_UP",
+            "title": "Menu Up",
+            "shortName": "M_UP"
+        },
+        {
+            "name": "MENU_DOWN",
+            "title": "Menu Down",
+            "shortName": "M_DOWN"
+        },
+        {
+            "name": "MENU_SELECT",
+            "title": "Menu Select",
+            "shortName": "M_SEL"
+        },
+        {
+            "name": "DEBUG_ADC",
+            "title": "Toggle ADC Debug",
+            "shortName": "ADC"
+        },
+        {
+            "name": "DEBUG_KEYS",
+            "title": "Toggle Key Debug",
+            "shortName": "KEYS"
+        },
+        {
+            "name": "DEBUG_RAW",
+            "title": "Toggle Raw Keycode Debug",
+            "shortName": "RAW"
+        },
+        {
+            "name": "RESET_ESP",
+            "title": "Reset ESP32",
+            "shortName": "R_ESP"
+        },
+        {
+            "name": "SOCD_TOG",
+            "title": "Toggle SOCD",
+            "shortName": "SOCD"
+        },
+        {
+            "name": "SETTINGS_OPEN",
+            "title": "Open Settings Menu",
+            "shortName": "SETT"
+        },
+        {
+            "name": "TIMER_OPEN",
+            "title": "Open Timer Menu",
+            "shortName": "TIMER"
+        },
+        {
+            "name": "TFT_BRIGHTNESS_UP",
+            "title": "Increase TFT Brightness",
+            "shortName": "TFT_UP"
+        },
+        {
+            "name": "TFT_BRIGHTNESS_DOWN",
+            "title": "Decrease TFT Brightness",
+            "shortName": "TFT_DOWN"
+        }
+    
+    ],
+    "layouts": {
+        "keymap": [
+            [
+                "0,0",
+                "0,1",
+                "0,2",
+                "0,3",
+                "0,4",
+                "0,5",
+                "0,6",
+                "0,7",
+                "0,8",
+                "0,9",
+                "0,10",
+                "0,11",
+                "0,12\n\n\n\n\n\n\n\n\ne0"
+            ],
+            [
+                "1,0",
+                "1,1",
+                "1,2",
+                "1,3",
+                "1,4",
+                "1,5",
+                "1,6",
+                "1,7",
+                "1,8",
+                "1,9",
+                "1,10",
+                "1,11"
+            ],
+            [
+                "2,0",
+                "2,1",
+                "2,2",
+                "2,3",
+                "2,4",
+                "2,5",
+                "2,6",
+                "2,7",
+                "2,8",
+                "2,9",
+                "2,10",
+                "2,11"
+            ],
+            [
+                "3,0",
+                "3,1",
+                "3,2",
+                "3,3",
+                "3,4",
+                "3,5",
+                "3,6",
+                "3,7",
+                "3,8",
+                "3,9",
+                "3,10",
+                "3,11"
+            ]
+        ]
+    }
+}

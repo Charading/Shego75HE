@@ -1,0 +1,91 @@
+Esc -> Works fine
+F1 -> 
+F2 -> 
+F3 ->
+F4 ->
+F5 -> works fine
+F6 ->
+F7 ->
+F8 ->
+F9 ->
+F10 ->
+F11 ->
+F12 ->
+Del ->
+Knob ->
+
+` ->
+1 ->
+2 -> presses 1, 2 and F1 at the same time 
+3 -> fine
+4 ->
+5 -> presses 5 and r at the same time
+6 -> presses 6, f6 and f7 at the same time
+7 -> fine
+8 ->
+9 ->
+0 ->
+- ->
+= ->
+Backspace ->
+Home ->
+
+Tab ->
+Q -> presses q, f2 and f3 
+W -> 
+E -> presses e 4 and f4
+R -> 
+T ->
+Y -> fine
+U ->
+I ->
+O ->
+P ->
+[ ->
+] ->
+\ ->
+PgUp ->
+
+CapsLock ->
+A -> presses and holds even after depress, fixes on reset
+S -> fine
+D -> 
+F ->
+G ->
+H ->
+J ->
+K ->
+L ->
+; ->
+' ->
+Enter ->
+PgDn ->
+
+Shift (L) -> fine
+Z -> presses z, windows key and w
+X -> 
+C -> fine
+V -> presses v, f, g and f5
+B ->
+N ->
+M ->
+, ->
+. ->
+/ ->
+Shift (R) ->
+↑ ->
+End ->
+
+Ctrl (L) ->
+Win ->
+Alt (L) -> presses L_alt, x and d but d keeps on pressed even after depress, fixes on reset.
+Space -> fine
+Alt (R) ->
+Fn ->
+← ->
+↓ ->
+→ ->
+
+knob clockwise -> vol up (fine)
+knob anti clockwise -> vol down (fine)
+knob press -> mute

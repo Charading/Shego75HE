@@ -1,0 +1,118 @@
+//shego75_v1_adc.c - QMK Custom Matrix Implementation
+#include QMK_KEYBOARD_H
+#include "quantum.h"
+#include "matrix.h"
+#include "analog.h"
+#include "wait.h"
+#include "print.h"
+#include "mux_pins.h"
+
+// MUX control pins (converted to QMK GP format)
+#define MUX_S0 GP11
+#define MUX_S1 GP12
+#define MUX_S2 GP13
+#define MUX_S3 GP14
+
+// ADC pins for each MUX (converted to QMK GP format)
+#define MUX1_ADC_PIN GP26
+#define MUX2_ADC_PIN GP27
+#define MUX3_ADC_PIN GP28
+
+#define SENSOR_THRESHOLD 1667 // Below this value = key pressed
+#define DEBOUNCE_MS 5
+
+// State tracking for 48 keys (4 rows x 12 cols)
+static bool key_pressed[48];
+static uint32_t key_timer[48];
+
+// Read ADC value from specified pin
+static uint16_t read_adc_pin(pin_t pin) {
+    return analogReadPin(pin);
+}
+
+// Select MUX channel using the 4 select pins
+static void select_mux_channel(uint8_t channel) {
+    writePin(MUX_S0, (channel >> 0) & 1);
+    writePin(MUX_S1, (channel >> 1) & 1);
+    writePin(MUX_S2, (channel >> 2) & 1);
+    writePin(MUX_S3, (channel >> 3) & 1);
+    wait_us(50); // Allow time for MUX to settle
+}
+
+void matrix_init_custom(void) {
+    // Configure MUX control pins as outputs
+    setPinOutput(MUX_S0);
+    setPinOutput(MUX_S1);
+    setPinOutput(MUX_S2);
+    setPinOutput(MUX_S3);
+    
+    // Initialize key state tracking
+    for (int i = 0; i < 48; i++) {
+        key_pressed[i] = false;
+        key_timer[i] = 0;
+    }
+    
+    // Print ready message only once at startup
+    uprintf("QMK_UART_READY\n");
+}
+
+bool matrix_scan_custom(matrix_row_t current_matrix[]) {
+    uint32_t current_time = timer_read32();
+    pin_t adc_pins[3] = {MUX1_ADC_PIN, MUX2_ADC_PIN, MUX3_ADC_PIN};
+    const mux16_ref_t* mux_tables[3] = {mux1_channels, mux2_channels, mux3_channels};
+    bool matrix_changed = false;
+    
+    // Scan all 3 MUXes
+    for (int mux_idx = 0; mux_idx < 3; mux_idx++) {
+        // Scan all 16 channels on this MUX
+        for (int channel = 0; channel < 16; channel++) {
+            select_mux_channel(channel);
+            uint16_t adc_val = read_adc_pin(adc_pins[mux_idx]);
+            
+            // Calculate key index (0-47 for 48 keys)
+            int key_index = mux_idx * 16 + channel;
+            if (key_index >= 48) continue; // Only handle first 48 keys
+            
+            // Get key mapping from the table
+            const mux16_ref_t* key_mapping = &mux_tables[mux_idx][channel];
+            if (!key_mapping->key) continue; // Skip unmapped keys
+            
+            // Convert sensor number to matrix position (4 rows x 12 cols)
+            uint8_t matrix_row = (key_mapping->sensor - 1) / MATRIX_COLS; // sensor numbers start at 1
+            uint8_t matrix_col = (key_mapping->sensor - 1) % MATRIX_COLS;
+            
+            // Check if this is within our 4x12 matrix
+            if (matrix_row >= MATRIX_ROWS || matrix_col >= MATRIX_COLS) continue;
+            
+            // Key is pressed when ADC value is BELOW threshold
+            bool is_pressed = (adc_val < SENSOR_THRESHOLD);
+            
+            // Handle debouncing and state changes
+            if (is_pressed != key_pressed[key_index]) {
+                if (current_time - key_timer[key_index] > DEBOUNCE_MS) {
+                    key_pressed[key_index] = is_pressed;
+                    key_timer[key_index] = current_time;
+                    
+                    // Update matrix state
+                    matrix_row_t old_state = current_matrix[matrix_row];
+                    if (is_pressed) {
+                        current_matrix[matrix_row] |= (1UL << matrix_col);
+                        uprintf("Key pressed: %s (R%d C%d)\n", key_mapping->key, matrix_row, matrix_col);
+                    } else {
+                        current_matrix[matrix_row] &= ~(1UL << matrix_col);
+                        uprintf("Key released: %s (R%d C%d)\n", key_mapping->key, matrix_row, matrix_col);
+                    }
+                    
+                    if (old_state != current_matrix[matrix_row]) {
+                        matrix_changed = true;
+                    }
+                }
+            } else {
+                // Reset timer if state is stable
+                key_timer[key_index] = current_time;
+            }
+        }
+    }
+    
+    return matrix_changed;
+}

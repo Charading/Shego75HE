@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "quantum.h": "c",
+        "gpio.h": "c",
+        "compare": "c",
+        "cstdint": "c"
+    }
+}
