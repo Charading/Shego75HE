@@ -1,5 +1,17 @@
 # SHEGO_BREADBOARD (shego75_v1)
 
+Features I've always wanted
+- Hall effect with socd + rapid trigger
+- QMK + VIA for easy remapping
+- Screen that can play gifs
+- North facing rgb
+- Ambient lighting
+- SignalRGB support (not just one zone)
+- Knob
+- 75% layout
+- Metal case
+- Not awful firmware/software
+
 Overview
 - Keyboard: SHEGO_BREADBOARD (RP2040)
 - Manufacturer: Charading
