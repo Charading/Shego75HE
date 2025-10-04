@@ -22,3 +22,6 @@ ANALOG_DRIVER = rp2040_adc
 
 # Optimizations
 LTO_ENABLE = yes
+
+# Enable VIA and persistent dynamic keymaps so VIA can save layout changes to EEPROM
+DYNAMIC_KEYMAP_ENABLE = yes

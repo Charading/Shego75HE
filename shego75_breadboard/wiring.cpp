@@ -223,4 +223,4 @@ const uint16_t key_thresholds[32] = {
 
 };
 
-Okay, so, is there a way to instead of using a static threshold, to make it so the keyboard scans all adc keys when plugged in, and then it only does a key press when the value deviates up OR down 20% away
+Okay, so, is there a way to instead of using a static threshold, to make it so the keyboard scans all adc keys when plugged in, and then it only does a key press when the value deviates up OR down 10% away

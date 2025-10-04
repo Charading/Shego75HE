@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 // Hall effect threshold - key is pressed when ADC is BELOW this value
-#define SENSOR_THRESHOLD 413
+#define SENSOR_THRESHOLD 440
 #define DEBOUNCE_MS 5
 
 // Optional MUX enable pins (comment out if not used)
@@ -67,6 +67,8 @@ void matrix_init_custom(void) {
     setPinInputHigh(MUX1_ADC_PIN);
     setPinInputHigh(MUX2_ADC_PIN);
     setPinInputHigh(MUX3_ADC_PIN);
+
+// ...existing code...
     
     // Initialize state
     for (uint8_t i = 0; i < 48; i++) {
@@ -148,6 +150,8 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
             
             // *** KEY LOGIC: Key is pressed when ADC value is BELOW threshold ***
             bool should_press = (adc_val < SENSOR_THRESHOLD);
+
+// ...existing code...
             
             // Store ADC value for debug printing
             if (debug_this_scan) {
@@ -178,6 +182,8 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
             if (key_pressed[key_idx]) {
                 current_matrix[matrix_row] |= (1 << matrix_col);
             }
+
+            // ...existing code...
         }
         
         // Disable all MUXes after scanning

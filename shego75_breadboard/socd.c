@@ -3,6 +3,7 @@
 #include "uart.h"
 #include "wait.h"
 #include "lighting.h"
+#include "timer.h"
 
 static bool socd_enabled = true;
 
@@ -19,6 +20,15 @@ static bool w_suppressed = false;
 static bool s_suppressed = false;
 
 void toggle_socd(void) {
+    // Prevent rapid toggles (debounce) — ignore toggles within 1000 ms
+    static uint32_t last_toggle_time = 0;
+    const uint32_t DEBOUNCE_MS = 1000;
+    if (timer_elapsed32(last_toggle_time) < DEBOUNCE_MS) {
+        uart_send_string("SOCD: toggle ignored (debounce)\n");
+        return;
+    }
+    last_toggle_time = timer_read32();
+
     socd_enabled = !socd_enabled;
     if (socd_enabled) uart_send_string("SOCD: Enabled\n");
     else uart_send_string("SOCD: Disabled\n");

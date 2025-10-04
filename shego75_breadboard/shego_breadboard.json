@@ -4,7 +4,7 @@
     "productId": "0x5460",
     "matrix": {
         "rows": 4,
-        "cols": 13
+        "cols": 12
     },
     "keycodes": [
         "qmk_lighting"
@@ -71,12 +71,12 @@
         {
             "name": "TFT_BRIGHTNESS_UP",
             "title": "Increase TFT Brightness",
-            "shortName": "TFT_UP"
+            "shortName": "TFT+"
         },
         {
             "name": "TFT_BRIGHTNESS_DOWN",
             "title": "Decrease TFT Brightness",
-            "shortName": "TFT_DOWN"
+            "shortName": "TFT-"
         }
     
     ],
@@ -95,7 +95,7 @@
                 "0,9",
                 "0,10",
                 "0,11",
-                "0,12\n\n\n\n\n\n\n\n\ne0"
+                "\n\n\n\n\n\n\n\n\ne0"
             ],
             [
                 "1,0",

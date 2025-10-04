@@ -3,6 +3,6 @@
 
 // Encoder switch (optional - not part of standard encoder config)
 #ifndef ENCODER_SW_PIN
-#define ENCODER_SW_PIN GP4
+#define ENCODER_SW_PIN GP10
 #endif
-#define ENCODER_DIRECTION_FLIP
+// #define ENCODER_DIRECTION_FLIP
