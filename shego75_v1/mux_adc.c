@@ -16,10 +16,10 @@
 #define SENSOR_THRESHOLD 440
 #define DEBOUNCE_MS 5
 
-// Optional MUX enable pins (comment out if not used)
-// #define MUX1_EN GP15
-// #define MUX2_EN GP16
-// #define MUX3_EN GP17
+// NOTE: On this board the ADG732 EN pins are grounded (always enabled).
+// We therefore select each ADG732 using its CS pin (active low) and latch
+// addresses with the WR pin. If you have external EN pins, you can enable
+// them by defining MUX1_EN / MUX2_EN / MUX3_EN in your board config.
 
 // Key state tracking for 48 keys (4 rows x 12 cols)
 static bool key_pressed[48];
@@ -36,32 +36,51 @@ static uint16_t read_adc_pin(pin_t pin) {
 
 // Helper for selecting MUX channel
 static void select_mux_channel(uint8_t channel) {
-    writePin(MUX_S0, (channel & 0x01) ? 1 : 0);
-    writePin(MUX_S1, (channel & 0x02) ? 1 : 0);
-    writePin(MUX_S2, (channel & 0x04) ? 1 : 0);
-    writePin(MUX_S3, (channel & 0x08) ? 1 : 0);
+    // Set address lines (A0..A4)
+    writePin(MUX_A0, (channel & 0x01) ? 1 : 0);
+    writePin(MUX_A1, (channel & 0x02) ? 1 : 0);
+    writePin(MUX_A2, (channel & 0x04) ? 1 : 0);
+    writePin(MUX_A3, (channel & 0x08) ? 1 : 0);
+    writePin(MUX_A4, (channel & 0x10) ? 1 : 0);
+
+    // Pulse WR low to latch the address into the ADG732 (falling edge triggers latch)
+#ifdef MUX_WR
+    writePinLow(MUX_WR);
+    wait_us(5); // short pulse to ensure latch
+    writePinHigh(MUX_WR);
+#else
+    // If no WR pin is defined, give address lines time to settle
     wait_us(50);
+#endif
 }
 
 void matrix_init_custom(void) {
     // Setup MUX control pins
-    setPinOutput(MUX_S0);
-    setPinOutput(MUX_S1);
-    setPinOutput(MUX_S2);
-    setPinOutput(MUX_S3);
+    setPinOutput(MUX_A0);
+    setPinOutput(MUX_A1);
+    setPinOutput(MUX_A2);
+    setPinOutput(MUX_A3);
+    setPinOutput(MUX_A4);
     
-    #ifdef MUX1_EN
-    setPinOutput(MUX1_EN);
-    writePinHigh(MUX1_EN); // Disable (active low)
-    #endif
-    #ifdef MUX2_EN
-    setPinOutput(MUX2_EN);
-    writePinHigh(MUX2_EN); // Disable (active low)
-    #endif
-    #ifdef MUX3_EN
-    setPinOutput(MUX3_EN);
-    writePinHigh(MUX3_EN); // Disable (active low)
-    #endif
+    // Configure CS pins for each MUX (ADG732 CS is active low)
+#ifdef MUX_CS1
+    setPinOutput(MUX_CS1);
+    writePinHigh(MUX_CS1); // disable by default
+#endif
+#ifdef MUX_CS2
+    setPinOutput(MUX_CS2);
+    writePinHigh(MUX_CS2); // disable by default
+#endif
+#ifdef MUX_CS3
+    setPinOutput(MUX_CS3);
+    writePinHigh(MUX_CS3); // disable by default
+#endif
+
+    // Configure WR pin used to latch address lines into the ADG732
+#ifdef MUX_WR
+    setPinOutput(MUX_WR);
+    writePinHigh(MUX_WR); // idle high
+#endif
     
     // Initialize ADC pins
     setPinInputHigh(MUX1_ADC_PIN);
@@ -96,7 +115,7 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
 
     // Array of ADC pins and MUX tables
     pin_t adc_pins[3] = {MUX1_ADC_PIN, MUX2_ADC_PIN, MUX3_ADC_PIN};
-    const mux16_ref_t* mux_tables[3] = {mux1_channels, mux2_channels, mux3_channels};
+    const mux32_ref_t* mux_tables[3] = {mux1_channels, mux2_channels, mux3_channels};
     
     // Storage for ADC values organized by row/col for debug printing
     typedef struct {
@@ -113,17 +132,17 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
         }
     }
 
-    // Scan all 3 MUXes
+    // Scan all 3 MUXes (use CS lines since EN pins are grounded)
     for (uint8_t mux_idx = 0; mux_idx < 3; mux_idx++) {
-        // Enable current MUX (if enable pins are defined)
-        #ifdef MUX1_EN
-        if (mux_idx == 0) { writePinLow(MUX1_EN); writePinHigh(MUX2_EN); writePinHigh(MUX3_EN); }
+        // Assert the CS (active low) for the selected MUX and deassert others
+        #ifdef MUX_CS1
+        if (mux_idx == 0) { writePinLow(MUX_CS1); } else { writePinHigh(MUX_CS1); }
         #endif
-        #ifdef MUX2_EN
-        if (mux_idx == 1) { writePinHigh(MUX1_EN); writePinLow(MUX2_EN); writePinHigh(MUX3_EN); }
+        #ifdef MUX_CS2
+        if (mux_idx == 1) { writePinLow(MUX_CS2); } else { writePinHigh(MUX_CS2); }
         #endif
-        #ifdef MUX3_EN
-        if (mux_idx == 2) { writePinHigh(MUX1_EN); writePinHigh(MUX2_EN); writePinLow(MUX3_EN); }
+        #ifdef MUX_CS3
+        if (mux_idx == 2) { writePinLow(MUX_CS3); } else { writePinHigh(MUX_CS3); }
         #endif
         
         // Scan all 16 channels on this MUX
@@ -137,9 +156,9 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
             uint8_t key_idx = mux_idx * 16 + ch;
             if (key_idx >= 48) continue; // Only handle first 48 keys
             
-            // Get key mapping from the table
-            const mux16_ref_t* key_mapping = &mux_tables[mux_idx][ch];
-            if (!key_mapping->key) continue; // Skip unmapped keys
+            // Get key mapping from the table (mux tables store a KeyName 'sensor')
+            const mux32_ref_t* key_mapping = &mux_tables[mux_idx][ch];
+            if (key_mapping->sensor == 0) continue; // Skip unmapped channels (0 means no mapping)
             
             // Convert sensor number to matrix position (4 rows x 12 cols)
             uint8_t matrix_row = (key_mapping->sensor - 1) / MATRIX_COLS; // sensor numbers start at 1
@@ -153,9 +172,14 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
 
 // ...existing code...
             
-            // Store ADC value for debug printing
+            // Store ADC value for debug printing (use sensor_names lookup)
             if (debug_this_scan) {
-                row_data[matrix_row][matrix_col].key_name = key_mapping->key;
+                uint8_t sensor_index = (uint8_t)key_mapping->sensor - 1; // KeyName enum starts at 1
+                if (sensor_index < KEY_COUNT) {
+                    row_data[matrix_row][matrix_col].key_name = sensor_names[sensor_index];
+                } else {
+                    row_data[matrix_row][matrix_col].key_name = NULL;
+                }
                 row_data[matrix_row][matrix_col].adc_val = adc_val;
             }
             
@@ -169,10 +193,16 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
                     // Print key event only if key debug is enabled
                     if (get_key_debug_enabled()) {
                         char buf[80];
-                        snprintf(buf, sizeof(buf), "Key %s: %s (R%d C%d) ADC=%d\n", 
-                                key_mapping->key,
-                                should_press ? "PRESS" : "RELEASE", 
-                                matrix_row, matrix_col, adc_val);
+            {
+                const char* name = NULL;
+                uint8_t sensor_index = (uint8_t)key_mapping->sensor - 1;
+                if (sensor_index < KEY_COUNT) name = sensor_names[sensor_index];
+                if (!name) name = "?";
+                snprintf(buf, sizeof(buf), "Key %s: %s (R%d C%d) ADC=%d\n", 
+                    name,
+                    should_press ? "PRESS" : "RELEASE", 
+                    matrix_row, matrix_col, adc_val);
+            }
                         uart_send_string(buf);
                     }
                 }
@@ -186,16 +216,16 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
             // ...existing code...
         }
         
-        // Disable all MUXes after scanning
-        #ifdef MUX1_EN
-        writePinHigh(MUX1_EN);
-        #endif
-        #ifdef MUX2_EN
-        writePinHigh(MUX2_EN);
-        #endif
-        #ifdef MUX3_EN
-        writePinHigh(MUX3_EN);
-        #endif
+    // Release all CS lines (disable all MUXes)
+#ifdef MUX_CS1
+    writePinHigh(MUX_CS1);
+#endif
+#ifdef MUX_CS2
+    writePinHigh(MUX_CS2);
+#endif
+#ifdef MUX_CS3
+    writePinHigh(MUX_CS3);
+#endif
     }
     
     // Print debug output organized by rows

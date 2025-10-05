@@ -10,17 +10,6 @@
 //   Row 2: LSFT Z    X    C    V    B    N    M    COMM DOT  SLSH RSFT
 //   Row 3: LCTL LGUI LALT MO1  SPC  SPC  SPC  MO2  RALT RGUI APP  RCTL
 
-const uint16_t sensor_to_keycode[KEY_COUNT] = {
-    // Sensors 1-12 (Row 0): ESC through BSPC
-    KC_ESC,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_BSPC,
-    // Sensors 13-24 (Row 1): TAB through ENT
-    KC_TAB,  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_ENT,
-    // Sensors 25-36 (Row 2): LSFT through RSFT
-    KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,
-    // Sensors 37-48 (Row 3): LCTL through RCTL  (use 0x5D00 for MO(1), 0x5D01 for MO(2))
-    KC_LCTL, KC_LGUI, KC_LALT, 0x5D00,  KC_SPC,  KC_SPC,  KC_SPC,  0x5D01,  KC_RALT, KC_RGUI, KC_APP,  KC_RCTL
-};
-
 
 
 
@@ -97,10 +86,10 @@ const mux32_ref_t mux2_channels[33] = {
     [22] = { K_P       },
     [23] = { K_MINUS   },
     [24] = { K_LBRC    },
-    [25] = { K_K       },
-    [26] = { K_DOT     },
-    [27] = { K_J       },
-    [28] = { 0         },
+    [25] = { 0         },
+    [26] = { K_K       },
+    [27] = { K_DOT     },
+    [28] = { K_J       },
     [29] = { 0         },
     [30] = { 0         },
     [31] = { 0         },
@@ -113,33 +102,33 @@ const mux32_ref_t mux3_channels[33] = {
     [2]  = { K_F12        },
     [3]  = { K_F11        },
     [4]  = { K_F10        },
-    [5]  = { K_F9         },
-    [6]  = { K_F8         },
-    [7]  = { K_EQUAL      },
-    [8]  = { K_RBRC       },
-    [9]  = { K_SEMI       },
-    [10] = { K_QUOTE      },
-    [11] = { K_SLASH      },
-    [12] = { K_L          },
-    [13] = { 0            },
-    [14] = { 0            },
-    [15] = { 0            },
-    [16] = { 0            },
+    [5]  = { 0            },
+    [6]  = { K_F9         },
+    [7]  = { 0            },
+    [8]  = { K_F8         },
+    [9]  = { 0            },
+    [10] = { K_EQUAL      },
+    [11] = { 0            },
+    [12] = { K_RBRC       },
+    [13] = { K_L          },
+    [14] = { K_SEMI       },
+    [15] = { K_QUOTE      },
+    [16] = { K_SLASH      },
     [17] = { K_HOME       },
     [18] = { K_PGUP       },
     [19] = { K_PGDN       },
     [20] = { 0            },
     [21] = { K_RIGHT      },
-    [22] = { K_UP         },
-    [23] = { K_DOWN       },
-    [24] = { K_BSLASH     },
-    [25] = { K_ENTER      },
-    [26] = { K_BACKSPACE  },
-    [27] = { K_LEFT       },
-    [28] = { K_RCTRL      },
-    [29] = { K_RSHIFT     },
-    [30] = { K_FN         },
-    [31] = { 0            },
-    [32] = { 0            },
+    [22] = { 0            },
+    [23] = { K_UP         },
+    [24] = { 0            },
+    [25] = { K_DOWN       },
+    [26] = { K_BSLASH     },
+    [27] = { K_ENTER      },
+    [28] = { K_BACKSPACE  },
+    [29] = { K_LEFT       },
+    [30] = { K_RCTRL      },
+    [31] = { K_RSHIFT     },
+    [32] = { K_FN         },
 };
 
