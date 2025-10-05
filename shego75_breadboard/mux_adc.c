@@ -139,11 +139,12 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
             
             // Get key mapping from the table
             const mux16_ref_t* key_mapping = &mux_tables[mux_idx][ch];
-            if (!key_mapping->key) continue; // Skip unmapped keys
-            
-            // Convert sensor number to matrix position (4 rows x 12 cols)
-            uint8_t matrix_row = (key_mapping->sensor - 1) / MATRIX_COLS; // sensor numbers start at 1
-            uint8_t matrix_col = (key_mapping->sensor - 1) % MATRIX_COLS;
+            // mux16_ref_t uses the 'sensor' field (enum Keys). Treat SENSOR_COUNT_PLUS_1 as unmapped.
+            if (key_mapping->sensor >= KEY_COUNT) continue; // Skip unmapped keys
+
+            // Convert sensor index to matrix position (0-based sensor enum -> 4 rows x 12 cols)
+            uint8_t matrix_row = ((int)key_mapping->sensor) / MATRIX_COLS;
+            uint8_t matrix_col = ((int)key_mapping->sensor) % MATRIX_COLS;
             
             // Check if this is within our 4x12 matrix
             if (matrix_row >= MATRIX_ROWS || matrix_col >= MATRIX_COLS) continue;
@@ -153,9 +154,14 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
 
 // ...existing code...
             
-            // Store ADC value for debug printing
+            // Store ADC value for debug printing (use sensor_names lookup)
             if (debug_this_scan) {
-                row_data[matrix_row][matrix_col].key_name = key_mapping->key;
+                int sensor_idx = (int)key_mapping->sensor; // enum is 0-based
+                if (sensor_idx >= 0 && sensor_idx < KEY_COUNT) {
+                    row_data[matrix_row][matrix_col].key_name = sensor_names[sensor_idx];
+                } else {
+                    row_data[matrix_row][matrix_col].key_name = NULL;
+                }
                 row_data[matrix_row][matrix_col].adc_val = adc_val;
             }
             
@@ -169,8 +175,16 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
                     // Print key event only if key debug is enabled
                     if (get_key_debug_enabled()) {
                         char buf[80];
+                        // Use sensor_names to get a printable key name
+                        const char *kname = NULL;
+                        {
+                            int sensor_idx = (int)key_mapping->sensor;
+                            if (sensor_idx >= 0 && sensor_idx < KEY_COUNT) {
+                                kname = sensor_names[sensor_idx];
+                            }
+                        }
                         snprintf(buf, sizeof(buf), "Key %s: %s (R%d C%d) ADC=%d\n", 
-                                key_mapping->key,
+                                kname ? kname : "?",
                                 should_press ? "PRESS" : "RELEASE", 
                                 matrix_row, matrix_col, adc_val);
                         uart_send_string(buf);

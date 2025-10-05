@@ -3,12 +3,20 @@
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint8_t
 
-#define KEY_COUNT 48 // 4 rows * 12 columns
+#define KEY_COUNT SENSOR_COUNT
+
+typedef enum KeyName {
+    K_ESC = 0, K_Q, K_W, K_E, K_R, K_T, K_Y, K_U, K_I, K_O, K_P, K_BSPC,
+    K_TAB, K_A, K_S, K_D, K_F, K_G, K_H, K_J, K_K, K_L, K_SCLN, K_ENT,
+    K_LSFT, K_Z, K_X, K_C, K_V, K_B, K_N, K_M, K_COMM, K_DOT, K_UP, K_RSFT,
+    K_LCTL, K_WIN, K_LALT, K_MO1, K_TG3, K_SPC1, K_SPC2, K_FN, K_RALT, K_LEFT, K_DOWN, K_RGHT,
+
+    SENSOR_COUNT,
+} Keys;
 
 // Struct for each channel entry
 typedef struct {
-    uint8_t sensor;      // Sensor number (HE#)
-    const char *key;     // Key name for debug ("F1", "A", etc.)
+    Keys sensor;       // Key associated with this channel
 } mux16_ref_t;
 
 // Extern declarations for each MUX table

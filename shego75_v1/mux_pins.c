@@ -21,6 +21,9 @@ const uint16_t sensor_to_keycode[KEY_COUNT] = {
     KC_LCTL, KC_LGUI, KC_LALT, 0x5D00,  KC_SPC,  KC_SPC,  KC_SPC,  0x5D01,  KC_RALT, KC_RGUI, KC_APP,  KC_RCTL
 };
 
+
+
+
 // Sensor names array (for debug printing)
 const char *sensor_names[KEY_COUNT] = {
     "Esc", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "Bspc",
@@ -33,62 +36,110 @@ const char *sensor_names[KEY_COUNT] = {
 // Each MUX channel is wired to a specific sensor number.
 // The sensor number automatically maps to matrix position via: (sensor-1)/12, (sensor-1)%12
 // Update these sensor numbers to match your actual MUX1 wiring.
-const mux16_ref_t mux1_channels[16] = {
-    [0]  = { .sensor =  4, .key = "E"    },  // CH0  wired to sensor 4
-    [1]  = { .sensor =  16, .key = "D"    },  // CH1  wired to sensor 2
-    [2]  = { .sensor =  28, .key = "C"    },  // CH2  wired to sensor 3
-    [3]  = { .sensor =  40, .key = "MO(1)"  },  // CH3  wired to sensor 1
-    [4]  = { .sensor =  3, .key = "W"  },  // CH4  wired to sensor 13
-    [5]  = { .sensor =  15, .key = "S"    },  // CH5  wired to sensor 6
-    [6]  = { .sensor =  27, .key = "X"    },  // CH6  wired to sensor 7
-    [7]  = { .sensor =  39, .key = "LAlt"    },  // CH7  wired to sensor 8r
-    [8]  = { .sensor =  2, .key = "Q"    },  // CH8  wired to sensor 9
-    [9]  = { .sensor = 14, .key = "A"    },  // CH9  wired to sensor 10
-    [10] = { .sensor = 26, .key = "Z"    },  // CH10 wired to sensor 11
-    [11] = { .sensor = 38, .key = "Win" },  // CH11 wired to sensor 12
-    [12] = { .sensor =  1, .key = "Esc"    },  // CH12 wired to sensor 5
-    [13] = { .sensor = 13, .key = "Tab"    },  // CH13 wired to sensor 14
-    [14] = { .sensor = 25, .key = "LShift"    }, 
-    [15] = { .sensor = 37, .key = "LCtrl"    },  
-};
-// MUX2 channel mappings (channels 0-15)
-// Same wiring as MUX1, but add 4 to each sensor number
-const mux16_ref_t mux2_channels[16] = {
-    [0]  = { .sensor =  4+4, .key = "U"      },  // CH0: sensor 8
-    [1]  = { .sensor = 16+4, .key = "J"      },  // CH1: sensor 20
-    [2]  = { .sensor = 28+4, .key = "M"      },  // CH2: sensor 32
-    [3]  = { .sensor = 40+4, .key = "MO(2)"  },  // CH3: sensor 44
-    [4]  = { .sensor =  3+4, .key = "Y"      },  // CH4: sensor 7
-    [5]  = { .sensor = 15+4, .key = "H"      },  // CH5: sensor 19
-    [6]  = { .sensor = 27+4, .key = "N"      },  // CH6: sensor 31
-    [7]  = { .sensor = 39+4, .key = "Spc"    },  // CH7: sensor 43
-    [8]  = { .sensor =  2+4, .key = "T"      },  // CH8: sensor 6
-    [9]  = { .sensor = 14+4, .key = "G"      },  // CH9: sensor 18
-    [10] = { .sensor = 26+4, .key = "B"      },  // CH10: sensor 30
-    [11] = { .sensor = 38+4, .key = "Spc"    },  // CH11: sensor 42
-    [12] = { .sensor =  1+4, .key = "R"      },  // CH12: sensor 5
-    [13] = { .sensor = 13+4, .key = "F"      },  // CH13: sensor 17
-    [14] = { .sensor = 25+4, .key = "V"      },  // CH14: sensor 29
-    [15] = { .sensor = 37+4, .key = "Spc"    },  // CH15: sensor 41
+const mux32_ref_t mux1_channels[33] = {
+    [1]  = { K_F3      },
+    [2]  = { K_3       },
+    [3]  = { K_F2      },
+    [4]  = { K_F1      },
+    [5]  = { K_2       },
+    [6]  = { K_ESC     },
+    [7]  = { K_W       },
+    [8]  = { K_F4      },
+    [9]  = { K_1       },
+    [10] = { K_GRAVE   },
+    [11] = { K_Q       },
+    [12] = { K_TAB     },
+    [13] = { K_CAPS    },
+    [14] = { K_LSHIFT  },
+    [15] = { K_A       },
+    [16] = { K_LCTRL   },
+    [17] = { K_E       },
+    [18] = { K_4       },
+    [19] = { K_R       },
+    [20] = { K_5       },
+    [21] = { K_G       },
+    [22] = { K_B       },
+    [23] = { K_F       },
+    [24] = { K_SPACE   },
+    [25] = { K_D       },
+    [26] = { K_V       },
+    [27] = { K_C       },
+    [28] = { K_LALT    },
+    [29] = { K_LWIN    },
+    [30] = { K_X       },
+    [31] = { K_Z       },
+    [32] = { K_S       },
 };
 
-// MUX3 channel mappings (channels 0-15)
-// Same wiring as MUX1, but add 8 to each sensor number
-const mux16_ref_t mux3_channels[16] = {
-    [0]  = { .sensor =  4+8, .key = "Bspc"   },  // CH0: sensor 12
-    [1]  = { .sensor = 16+8, .key = "Ent"    },  // CH1: sensor 24
-    [2]  = { .sensor = 28+8, .key = "RShft"  },  // CH2: sensor 36
-    [3]  = { .sensor = 40+8, .key = "RCtrl"  },  // CH3: sensor 48
-    [4]  = { .sensor =  3+8, .key = "P"      },  // CH4: sensor 11
-    [5]  = { .sensor = 15+8, .key = "Scln"   },  // CH5: sensor 23
-    [6]  = { .sensor = 27+8, .key = "Slsh"   },  // CH6: sensor 35
-    [7]  = { .sensor = 39+8, .key = "App"    },  // CH7: sensor 47
-    [8]  = { .sensor =  2+8, .key = "O"      },  // CH8: sensor 10
-    [9]  = { .sensor = 14+8, .key = "L"      },  // CH9: sensor 22
-    [10] = { .sensor = 26+8, .key = "Dot"    },  // CH10: sensor 34
-    [11] = { .sensor = 38+8, .key = "RGui"   },  // CH11: sensor 46
-    [12] = { .sensor =  1+8, .key = "I"      },  // CH12: sensor 9
-    [13] = { .sensor = 13+8, .key = "K"      },  // CH13: sensor 21
-    [14] = { .sensor = 25+8, .key = "Comm"   },  // CH14: sensor 33
-    [15] = { .sensor = 37+8, .key = "RAlt"   },  // CH15: sensor 45
+//MUX 2 channel mappings (channels 0-15)
+const mux32_ref_t mux2_channels[33] = {
+    [1]  = { K_F7      },
+    [2]  = { K_7       },
+    [3]  = { K_F6      },
+    [4]  = { K_6       },
+    [5]  = { K_Y       },
+    [6]  = { K_8       },
+    [7]  = { 0         },
+    [8]  = { K_F5      },
+    [9]  = { K_T       },
+    [10] = { K_N       },
+    [11] = { K_M       },
+    [12] = { K_RALT    },
+    [13] = { K_COMMA   },
+    [14] = { K_H       },
+    [15] = { 0         },
+    [16] = { 0         },
+    [17] = { K_U       },
+    [18] = { K_I       },
+    [19] = { K_9       },
+    [20] = { K_O       },
+    [21] = { K_0       },
+    [22] = { K_P       },
+    [23] = { K_MINUS   },
+    [24] = { K_LBRC    },
+    [25] = { K_K       },
+    [26] = { K_DOT     },
+    [27] = { K_J       },
+    [28] = { 0         },
+    [29] = { 0         },
+    [30] = { 0         },
+    [31] = { 0         },
+    [32] = { 0         },
 };
+
+//MUX 3 channel mappings (channels 0-15)
+const mux32_ref_t mux3_channels[33] = {
+    [1]  = { K_DEL        },
+    [2]  = { K_F12        },
+    [3]  = { K_F11        },
+    [4]  = { K_F10        },
+    [5]  = { K_F9         },
+    [6]  = { K_F8         },
+    [7]  = { K_EQUAL      },
+    [8]  = { K_RBRC       },
+    [9]  = { K_SEMI       },
+    [10] = { K_QUOTE      },
+    [11] = { K_SLASH      },
+    [12] = { K_L          },
+    [13] = { 0            },
+    [14] = { 0            },
+    [15] = { 0            },
+    [16] = { 0            },
+    [17] = { K_HOME       },
+    [18] = { K_PGUP       },
+    [19] = { K_PGDN       },
+    [20] = { 0            },
+    [21] = { K_RIGHT      },
+    [22] = { K_UP         },
+    [23] = { K_DOWN       },
+    [24] = { K_BSLASH     },
+    [25] = { K_ENTER      },
+    [26] = { K_BACKSPACE  },
+    [27] = { K_LEFT       },
+    [28] = { K_RCTRL      },
+    [29] = { K_RSHIFT     },
+    [30] = { K_FN         },
+    [31] = { 0            },
+    [32] = { 0            },
+};
+
