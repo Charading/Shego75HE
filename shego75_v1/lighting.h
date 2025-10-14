@@ -17,3 +17,6 @@ void set_caps_override(bool on);
 // Start a one-shot pulse animation on a single LED index (0-based)
 void start_led_pulse(uint8_t led_index);
 
+// Initialize lighting baseline and internal caches. Call from keyboard_post_init_user.
+void lighting_init(void);
+

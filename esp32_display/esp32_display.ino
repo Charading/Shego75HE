@@ -22,8 +22,8 @@
 #define BUTTON_SELECT 15  // Select button
 
 // UART pins for QMK communication
-#define QMK_RX_PIN 16     // ESP32 receives from RP2040
-#define QMK_TX_PIN 17     // ESP32 sends to RP2040
+#define QMK_RX_PIN 32     // ESP32 receives from RP2040
+#define QMK_TX_PIN 33     // ESP32 sends to RP2040
 
 // Create second serial port for QMK communication
 HardwareSerial QMKSerial(2);

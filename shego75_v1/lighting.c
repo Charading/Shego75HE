@@ -95,6 +95,22 @@ void set_layer3_override(bool on) {
     }
 }
 
+// Initialize lighting state to a sane baseline. Call from keyboard_post_init_user.
+void lighting_init(void) {
+    // baseline dim red (~5% of 255 -> 13)
+    const uint8_t r = 13, g = 0, b = 0;
+    for (int i = 0; i < 94; ++i) {
+        current_colors[i][0] = r;
+        current_colors[i][1] = g;
+        current_colors[i][2] = b;
+        saved_colors[i][0] = r;
+        saved_colors[i][1] = g;
+        saved_colors[i][2] = b;
+        rgb_matrix_set_color(i, r, g, b);
+    }
+    saved_valid = true;
+}
+
 void set_caps_override(bool on) {
     caps_override = on;
 }

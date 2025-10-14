@@ -5,20 +5,19 @@
 // This maps sensor numbers 1-48 directly to QMK keycodes based on your 4x12 layout
 // Sensor numbers are calculated as: (matrix_row * 12) + matrix_col + 1
 // Your keymap layout:
-//   Row 0: ESC  Q    W    E    R    T    Y    U    I    O    P    BSPC
-//   Row 1: TAB  A    S    D    F    G    H    J    K    L    SCLN ENT
-//   Row 2: LSFT Z    X    C    V    B    N    M    COMM DOT  SLSH RSFT
-//   Row 3: LCTL LGUI LALT MO1  SPC  SPC  SPC  MO2  RALT RGUI APP  RCTL
+
 
 
 
 
 // Sensor names array (for debug printing)
 const char *sensor_names[KEY_COUNT] = {
-    "Esc", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "Bspc",
-    "Tab", "A", "S", "D", "F", "G", "H", "J", "K", "L", "Scln", "Ent",
-    "LShft", "Z", "X", "C", "V", "B", "N", "M", "Comm", "Dot", "Slsh", "RShft",
-    "LCtrl", "LGui", "LAlt", "MO1", "Spc", "Spc", "Spc", "MO2", "RAlt", "RGui", "App", "RCtrl"
+    "Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "Delete",
+    "Grave", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Minus", "Equal", "Backspace", "Home",
+    "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "LBracket", "RBracket", "Backslash", "PgUp",
+    "Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", "Semicolon", "Quote", "Enter", "PgDn",
+    "LShift", "Z", "X", "C", "V", "B", "N", "M", "Comma", "Dot", "Slash", "RShift", "Up",
+    "LControl", "LWin", "LAlt", "Space", "RAlt", "Function", "RControl", "Left", "Down", "Right"
 };
 
 // MUX1 channel mappings (channels 0-15)

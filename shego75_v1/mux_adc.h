@@ -22,6 +22,11 @@
 // Mux write/latch pin (active low, latch on rising edge)
 #define MUX_WR GP22
 
+// Hall effect threshold - key is pressed when ADC is BELOW this value
+#define SENSOR_THRESHOLD 1650
+
+
+
 // QMK Matrix functions
 void matrix_init_custom(void);
 bool matrix_scan_custom(matrix_row_t current_matrix[]);

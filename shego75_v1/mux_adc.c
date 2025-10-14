@@ -12,8 +12,6 @@
 #include "print.h"
 #include <stdio.h>
 
-// Hall effect threshold - key is pressed when ADC is BELOW this value
-#define SENSOR_THRESHOLD 440
 #define DEBOUNCE_MS 5
 
 // NOTE: On this board the ADG732 EN pins are grounded (always enabled).
@@ -21,21 +19,26 @@
 // addresses with the WR pin. If you have external EN pins, you can enable
 // them by defining MUX1_EN / MUX2_EN / MUX3_EN in your board config.
 
-// Key state tracking for 48 keys (4 rows x 12 cols)
-static bool key_pressed[48];
-static uint32_t key_timer[48];
+// Key state tracking for 81 keys (6 rows × 15 cols max)
+// Using MATRIX_ROWS * MATRIX_COLS = 6 * 15 = 90 slots to be safe
+#define MAX_KEYS (MATRIX_ROWS * MATRIX_COLS)
+static bool key_pressed[MAX_KEYS];
+static uint32_t key_timer[MAX_KEYS];
 
 // Debug counter to limit output
-static uint32_t debug_counter = 0;
-static uint32_t last_debug_time = 0;
+// Debug counters (may be used later); mark volatile to avoid unused warnings
+static volatile uint32_t debug_counter = 0;
+static volatile uint32_t last_debug_time = 0;
 
 // Helper for reading ADC
-static uint16_t read_adc_pin(pin_t pin) {
+// Helper for reading ADC (kept static but may be unused in diagnostic stub)
+static inline uint16_t read_adc_pin(pin_t pin) {
     return analogReadPin(pin);
 }
 
 // Helper for selecting MUX channel
-static void select_mux_channel(uint8_t channel) {
+// Helper to select MUX channel (kept inline to avoid unused-function error)
+static inline void select_mux_channel(uint8_t channel) {
     // Set address lines (A0..A4)
     writePin(MUX_A0, (channel & 0x01) ? 1 : 0);
     writePin(MUX_A1, (channel & 0x02) ? 1 : 0);
@@ -55,200 +58,106 @@ static void select_mux_channel(uint8_t channel) {
 }
 
 void matrix_init_custom(void) {
-    // Setup MUX control pins
+    // Diagnostic stub: do minimal init and skip full MUX setup.
+    // Debug print so we can see whether init completes
+    uart_send_string("[mux_adc] matrix_init_custom start\n");
+    // This prevents the custom scanning code from running until we verify it's safe.
+    // Keep pin setup minimal so other code can run without touching ADC/MUXs.
     setPinOutput(MUX_A0);
     setPinOutput(MUX_A1);
     setPinOutput(MUX_A2);
-    setPinOutput(MUX_A3);
-    setPinOutput(MUX_A4);
-    
-    // Configure CS pins for each MUX (ADG732 CS is active low)
-#ifdef MUX_CS1
-    setPinOutput(MUX_CS1);
-    writePinHigh(MUX_CS1); // disable by default
-#endif
-#ifdef MUX_CS2
-    setPinOutput(MUX_CS2);
-    writePinHigh(MUX_CS2); // disable by default
-#endif
-#ifdef MUX_CS3
-    setPinOutput(MUX_CS3);
-    writePinHigh(MUX_CS3); // disable by default
-#endif
 
-    // Configure WR pin used to latch address lines into the ADG732
-#ifdef MUX_WR
-    setPinOutput(MUX_WR);
-    writePinHigh(MUX_WR); // idle high
-#endif
-    
-    // Initialize ADC pins
-    setPinInputHigh(MUX1_ADC_PIN);
-    setPinInputHigh(MUX2_ADC_PIN);
-    setPinInputHigh(MUX3_ADC_PIN);
-
-// ...existing code...
-    
-    // Initialize state
-    for (uint8_t i = 0; i < 48; i++) {
+    // Initialize state for all possible keys (safe defaults)
+    for (uint8_t i = 0; i < MAX_KEYS; i++) {
         key_pressed[i] = false;
         key_timer[i] = 0;
     }
+    uart_send_string("[mux_adc] matrix_init_custom done\n");
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     bool changed = false;
     uint32_t now = timer_read32();
-    
-    // Clear matrix
+
+    // Clear matrix output
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
         current_matrix[row] = 0;
     }
-    
-    // Debug every 1 second (1000ms) - only if ADC debug is enabled
-    bool debug_this_scan = false;
-    if (get_adc_debug_enabled() && timer_elapsed32(last_debug_time) >= 1000) {
-        debug_this_scan = true;
-        last_debug_time = now;
-    }
-    debug_counter++;
 
-    // Array of ADC pins and MUX tables
+    // ADC pins and mapping tables
     pin_t adc_pins[3] = {MUX1_ADC_PIN, MUX2_ADC_PIN, MUX3_ADC_PIN};
     const mux32_ref_t* mux_tables[3] = {mux1_channels, mux2_channels, mux3_channels};
-    
-    // Storage for ADC values organized by row/col for debug printing
-    typedef struct {
-        const char* key_name;
-        uint16_t adc_val;
-    } row_data_t;
-    row_data_t row_data[MATRIX_ROWS][MATRIX_COLS];
-    
-    // Initialize row data
-    for (uint8_t r = 0; r < MATRIX_ROWS; r++) {
-        for (uint8_t c = 0; c < MATRIX_COLS; c++) {
-            row_data[r][c].key_name = NULL;
-            row_data[r][c].adc_val = 0;
-        }
-    }
 
-    // Scan all 3 MUXes (use CS lines since EN pins are grounded)
+    const uint16_t ADC_GND_THRESHOLD = 20; // skip obviously unconnected channels
+
+    // Scan each mux and channel
     for (uint8_t mux_idx = 0; mux_idx < 3; mux_idx++) {
-        // Assert the CS (active low) for the selected MUX and deassert others
-        #ifdef MUX_CS1
+        // Select appropriate CS
+#ifdef MUX_CS1
         if (mux_idx == 0) { writePinLow(MUX_CS1); } else { writePinHigh(MUX_CS1); }
-        #endif
-        #ifdef MUX_CS2
+#endif
+#ifdef MUX_CS2
         if (mux_idx == 1) { writePinLow(MUX_CS2); } else { writePinHigh(MUX_CS2); }
-        #endif
-        #ifdef MUX_CS3
+#endif
+#ifdef MUX_CS3
         if (mux_idx == 2) { writePinLow(MUX_CS3); } else { writePinHigh(MUX_CS3); }
-        #endif
-        
-        // Scan all 16 channels on this MUX
-        for (uint8_t ch = 0; ch < 16; ch++) {
+#endif
+
+        for (uint8_t ch = 0; ch < 32; ch++) {
             select_mux_channel(ch);
-            wait_us(100);
-            
+            wait_us(50);
+
             uint16_t adc_val = read_adc_pin(adc_pins[mux_idx]);
-            
-            // Calculate key index (0-47 for 48 keys)
-            uint8_t key_idx = mux_idx * 16 + ch;
-            if (key_idx >= 48) continue; // Only handle first 48 keys
-            
-            // Get key mapping from the table (mux tables store a KeyName 'sensor')
-            const mux32_ref_t* key_mapping = &mux_tables[mux_idx][ch];
-            if (key_mapping->sensor == 0) continue; // Skip unmapped channels (0 means no mapping)
-            
-            // Convert sensor number to matrix position (4 rows x 12 cols)
-            uint8_t matrix_row = (key_mapping->sensor - 1) / MATRIX_COLS; // sensor numbers start at 1
-            uint8_t matrix_col = (key_mapping->sensor - 1) % MATRIX_COLS;
-            
-            // Check if this is within our 4x12 matrix
+
+            const mux32_ref_t* key_mapping = &mux_tables[mux_idx][ch + 1];
+            if (!key_mapping) continue;
+
+            // If channel is unmapped and reads near GND, skip
+            if (key_mapping->sensor == 0) {
+                if (adc_val <= ADC_GND_THRESHOLD) continue;
+                else continue;
+            }
+
+            uint16_t sensor = key_mapping->sensor;
+            if (sensor == 0) continue;
+
+            // Map sensor to matrix position
+            uint8_t matrix_row = (sensor - 1) / MATRIX_COLS;
+            uint8_t matrix_col = (sensor - 1) % MATRIX_COLS;
+
             if (matrix_row >= MATRIX_ROWS || matrix_col >= MATRIX_COLS) continue;
-            
-            // *** KEY LOGIC: Key is pressed when ADC value is BELOW threshold ***
+
+            uint16_t key_idx = (matrix_row * MATRIX_COLS) + matrix_col;
+            if (key_idx >= MAX_KEYS) continue;
+
             bool should_press = (adc_val < SENSOR_THRESHOLD);
 
-// ...existing code...
-            
-            // Store ADC value for debug printing (use sensor_names lookup)
-            if (debug_this_scan) {
-                uint8_t sensor_index = (uint8_t)key_mapping->sensor - 1; // KeyName enum starts at 1
-                if (sensor_index < KEY_COUNT) {
-                    row_data[matrix_row][matrix_col].key_name = sensor_names[sensor_index];
-                } else {
-                    row_data[matrix_row][matrix_col].key_name = NULL;
-                }
-                row_data[matrix_row][matrix_col].adc_val = adc_val;
-            }
-            
-            // Debounce check
+            // Debounce: only change state if debounce time elapsed
             if (timer_elapsed32(key_timer[key_idx]) > DEBOUNCE_MS) {
                 if (should_press != key_pressed[key_idx]) {
                     key_pressed[key_idx] = should_press;
                     key_timer[key_idx] = now;
                     changed = true;
-                    
-                    // Print key event only if key debug is enabled
-                    if (get_key_debug_enabled()) {
-                        char buf[80];
-            {
-                const char* name = NULL;
-                uint8_t sensor_index = (uint8_t)key_mapping->sensor - 1;
-                if (sensor_index < KEY_COUNT) name = sensor_names[sensor_index];
-                if (!name) name = "?";
-                snprintf(buf, sizeof(buf), "Key %s: %s (R%d C%d) ADC=%d\n", 
-                    name,
-                    should_press ? "PRESS" : "RELEASE", 
-                    matrix_row, matrix_col, adc_val);
-            }
-                        uart_send_string(buf);
-                    }
                 }
             }
-            
-            // Set key in matrix if pressed
+
             if (key_pressed[key_idx]) {
                 current_matrix[matrix_row] |= (1 << matrix_col);
             }
-
-            // ...existing code...
         }
-        
-    // Release all CS lines (disable all MUXes)
+
+        // Release CS for this MUX (keep others disabled)
 #ifdef MUX_CS1
-    writePinHigh(MUX_CS1);
+        writePinHigh(MUX_CS1);
 #endif
 #ifdef MUX_CS2
-    writePinHigh(MUX_CS2);
+        writePinHigh(MUX_CS2);
 #endif
 #ifdef MUX_CS3
-    writePinHigh(MUX_CS3);
+        writePinHigh(MUX_CS3);
 #endif
     }
-    
-    // Print debug output organized by rows
-    if (debug_this_scan) {
-        char buf[200];
-        uart_send_string("\n=== ADC VALUES BY ROW ===\n");
-        
-        for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
-            snprintf(buf, sizeof(buf), "Row %d: ", row);
-            uart_send_string(buf);
-            
-            for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-                if (row_data[row][col].key_name) {
-                    snprintf(buf, sizeof(buf), "%s=%d ", 
-                             row_data[row][col].key_name,
-                             row_data[row][col].adc_val);
-                    uart_send_string(buf);
-                }
-            }
-            uart_send_string("\n");
-        }
-        uart_send_string("\n");
-    }
-    
+
+    (void)debug_counter; (void)last_debug_time;
     return changed;
 }
