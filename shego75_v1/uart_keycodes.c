@@ -46,10 +46,11 @@ void toggle_raw_debug(void) {
 void toggle_led(void) {
     led_enabled = !led_enabled;
     if (led_enabled) {
-        writePinLow(GP23);  // AO3401 P-channel: LOW = ON
+        setPinOutput(GP23);      // Drive as output
+        writePinLow(GP23);       // AO3401 P-channel: LOW = ON (Vgs = -5V)
         uart_debug_print("[LED] LED: ON\n");
     } else {
-        writePinHigh(GP23);  // AO3401 P-channel: HIGH = OFF
+        writePinHigh(GP23);      // Drive HIGH = OFF (Vgs = -1.7V, slight glow but stable)
         uart_debug_print("[LED] LED: OFF\n");
     }
 }
