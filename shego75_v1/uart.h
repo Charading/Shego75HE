@@ -10,6 +10,7 @@ extern "C" {
 
 void uart_init_and_welcome(void);
 void uart_send_string(const char* str);
+void uart_debug_print(const char* str);  // Debug output to UART0 (GP0) and HID console
 // Initialize UART RX (configure RX pin and enable interrupts/polling as needed)
 void uart_init_rx(void);
 // Poll for available bytes; returns -1 if none, otherwise returns uint8_t value.

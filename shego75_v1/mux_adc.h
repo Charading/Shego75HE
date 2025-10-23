@@ -23,7 +23,7 @@
 #define MUX_WR GP22
 
 // Hall effect threshold - key is pressed when ADC is BELOW this value
-#define SENSOR_THRESHOLD 1650
+#define SENSOR_THRESHOLD 450
 
 
 

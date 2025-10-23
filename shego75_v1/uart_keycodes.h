@@ -17,7 +17,8 @@ enum custom_keycodes {
     SETTINGS_OPEN,  // Open settings menu (VIA)
     TIMER_OPEN,      // Open timer menu (VIA)
     TFT_BRIGHTNESS_UP,    // Increase TFT brightness (VIA)
-    TFT_BRIGHTNESS_DOWN  // Decrease TFT brightness (VIA)
+    TFT_BRIGHTNESS_DOWN,  // Decrease TFT brightness (VIA)
+    LED_TOG         // Toggle LED on GP23 (AO3401 transistor) (VIA)
 };
 
 // If your external reset transistor inverts the MCU GPIO (eg. BSS138 with gate pulled to
@@ -41,3 +42,7 @@ void toggle_raw_debug(void);
 bool get_adc_debug_enabled(void);
 bool get_key_debug_enabled(void);
 bool get_raw_debug_enabled(void);
+
+// LED control functions
+void toggle_led(void);
+bool get_led_enabled(void);

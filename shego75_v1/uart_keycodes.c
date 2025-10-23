@@ -9,36 +9,48 @@
 #endif
 
 // Debug state variables
-static bool adc_debug_enabled = false;   // Start disabled
+static bool adc_debug_enabled = true;   // Start enabled
 static bool key_debug_enabled = false;   // Start disabled
 static bool raw_debug_enabled = false;    // Start disabled
+static bool led_enabled = false;         // Start with LED off
 // SOCD lives in socd.c
 
 // Toggle functions
 void toggle_adc_debug(void) {
     adc_debug_enabled = !adc_debug_enabled;
     if (adc_debug_enabled) {
-        uart_send_string("[DEBUG] ADC printing: ON\n");
+        uart_debug_print("[DEBUG] ADC printing: ON\n");
     } else {
-        uart_send_string("[DEBUG] ADC printing: OFF\n");
+        uart_debug_print("[DEBUG] ADC printing: OFF\n");
     }
 }
 
 void toggle_key_debug(void) {
     key_debug_enabled = !key_debug_enabled;
     if (key_debug_enabled) {
-        uart_send_string("[DEBUG] Key printing: ON\n");
+        uart_debug_print("[DEBUG] Key printing: ON\n");
     } else {
-        uart_send_string("[DEBUG] Key printing: OFF\n");
+        uart_debug_print("[DEBUG] Key printing: OFF\n");
     }
 }
 
 void toggle_raw_debug(void) {
     raw_debug_enabled = !raw_debug_enabled;
     if (raw_debug_enabled) {
-        uart_send_string("[DEBUG] Raw keycodes: ON\n");
+        uart_debug_print("[DEBUG] Raw keycodes: ON\n");
     } else {
-        uart_send_string("[DEBUG] Raw keycodes: OFF\n");
+        uart_debug_print("[DEBUG] Raw keycodes: OFF\n");
+    }
+}
+
+void toggle_led(void) {
+    led_enabled = !led_enabled;
+    if (led_enabled) {
+        writePinHigh(GP23);
+        uart_debug_print("[LED] LED: ON\n");
+    } else {
+        writePinLow(GP23);
+        uart_debug_print("[LED] LED: OFF\n");
     }
 }
 
@@ -55,14 +67,18 @@ bool get_raw_debug_enabled(void) {
     return raw_debug_enabled;
 }
 
+bool get_led_enabled(void) {
+    return led_enabled;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     bool pressed = record->event.pressed;
 
     if (pressed && get_raw_debug_enabled()) {
-        // Print the raw keycode so you can see what VIA sends for a custom key
+        // Print the raw keycode to debug UART (GP0)
         char buf[64];
         snprintf(buf, sizeof(buf), "RAW_KEYCODE: 0x%04X\n", keycode);
-        uart_send_string(buf);
+        uart_debug_print(buf);
     }
 
     // Delegate SOCD handling (WASD) to socd.c; if it returns false the event
@@ -125,6 +141,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     else if (keycode == 0x7E0A) kc = TIMER_OPEN;    // VIA slot for TIMER_OPEN
     else if (keycode == 0x7E0B) kc = TFT_BRIGHTNESS_UP;    // VIA slot for TFT_BRIGHTNESS_UP
     else if (keycode == 0x7E0C) kc = TFT_BRIGHTNESS_DOWN;  // VIA slot for TFT_BRIGHTNESS_DOWN
+    else if (keycode == 0x7E0D) kc = LED_TOG;              // VIA slot for LED_TOG
 
     switch (kc) {
                
@@ -194,6 +211,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case SOCD_TOG: // SOCD toggle (VIA)
             if (pressed) toggle_socd();
+            return false;
+
+        case LED_TOG: // LED toggle (VIA)
+            if (pressed) toggle_led();
             return false;
 
         case RESET_ESP: {

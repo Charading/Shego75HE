@@ -1,134 +1,118 @@
-// uart.c - Pico SDK UART implementation for shego75_v1
+// uart.c - Dual UART implementation for shego75_v1
+// UART0 (GP0/GP1): Debug output
+// UART1 (GP8/GP9): ESP32 communication
 #include "uart.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
+#include "print.h"
+#include "wait.h"
 
-// Global flag to track if UART has been initialized
-static bool uart_initialized = false;
+// Track initialization state for both UARTs
+static bool uart0_initialized = false;  // Debug UART
+static bool uart1_initialized = false;  // ESP32 UART
 
-// Some QMK/platform configs may define UART_TX_PIN as the token GP0 etc
-// before the Pico SDK headers are available in the include order. If GPn
-// tokens aren't defined yet, define safe numeric fallbacks so the token
-// expansions work (e.g. UART_TX_PIN == GP0 -> 0).
-#ifndef GP0
-#define GP0 0
-#define GP1 1
-#define GP2 2
-#define GP3 3
-#define GP4 4
-#define GP5 5
-#define GP6 6
-#define GP7 7
-#define GP8 8
-#define GP9 9
-#define GP10 10
-#define GP11 11
-#define GP12 12
-#define GP13 13
-#define GP14 14
-#define GP15 15
-#define GP16 16
-#define GP17 17
-#define GP18 18
-#define GP19 19
-#define GP20 20
-#define GP21 21
-#define GP22 22
-#define GP23 23
-#define GP24 24
-#define GP25 25
-#define GP26 26
-#define GP27 27
-#define GP28 28
-#define GP29 29
-#endif
+// UART0: Debug output (GP0 TX, GP1 RX - RX not used)
+#define DEBUG_UART_ID uart0
+#define DEBUG_TX_PIN 0
+#define DEBUG_BAUD 115200
 
-// UART configuration - select uart0 or uart1 based on UART_DRIVER_INDEX
-#ifndef UART_DRIVER_INDEX
-#define UART_DRIVER_INDEX 0
-#endif
-
-#if UART_DRIVER_INDEX == 1
-#define UART_ID uart1
-#else
-#define UART_ID uart0
-#endif
-
-#ifndef UART_TX_PIN
-#define UART_TX_PIN 0
-#endif
-
-#ifndef UART_BAUD
-#define UART_BAUD 115200
-#endif
+// UART1: ESP32 communication (GP8 TX, GP9 RX)
+#define ESP_UART_ID uart1
+#define ESP_TX_PIN 8
+#define ESP_RX_PIN 9
+#define ESP_BAUD 115200
 
 void uart_init_and_welcome(void) {
-    // Only initialize once
-    if (uart_initialized) return;
+    // Initialize UART0 for debug output
+    if (!uart0_initialized) {
+        uart_init(DEBUG_UART_ID, DEBUG_BAUD);
+        gpio_set_function(DEBUG_TX_PIN, GPIO_FUNC_UART);
+        uart_set_hw_flow(DEBUG_UART_ID, false, false);
+        uart_set_format(DEBUG_UART_ID, 8, 1, UART_PARITY_NONE);
+        uart0_initialized = true;
+    }
     
-    // Initialize UART peripheral
-    uart_init(UART_ID, UART_BAUD);
-
-    // Configure TX pin for UART
-    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-
-    // Disable hardware flow control (CTS/RTS)
-    uart_set_hw_flow(UART_ID, false, false);
-
-    // 8 data bits, 1 stop bit, no parity
-    uart_set_format(UART_ID, 8, 1, UART_PARITY_NONE);
-
-    // Small delay to stabilise the line
-    sleep_ms(10);
-
-    // Mark as initialized before sending (prevents recursive issues)
-    uart_initialized = true;
-
-    // Send a welcome message so you can verify UART is working
-    uart_puts(UART_ID, "QMK_UART_READY\n");
-    uart_tx_wait_blocking(UART_ID);
+    // Initialize UART1 for ESP32 communication
+    if (!uart1_initialized) {
+        uart_init(ESP_UART_ID, ESP_BAUD);
+        gpio_set_function(ESP_TX_PIN, GPIO_FUNC_UART);
+        uart_set_hw_flow(ESP_UART_ID, false, false);
+        uart_set_format(ESP_UART_ID, 8, 1, UART_PARITY_NONE);
+        sleep_ms(10);
+        uart1_initialized = true;
+        
+        // Send welcome to ESP32
+        uart_puts(ESP_UART_ID, "QMK_UART_READY\n");
+        uart_tx_wait_blocking(ESP_UART_ID);
+    }
 }
 
+// Send string to ESP32 (UART1) and also to HID console
 void uart_send_string(const char* str) {
     if (!str) return;
+    if (!uart1_initialized) uart_init_and_welcome();
     
-    // Lazy-initialize UART if it hasn't been initialized yet. This makes
-    // uart_send_string safe to call early (for example from process_record_user)
-    // even if keyboard_post_init_user hasn't run yet.
-    if (!uart_initialized) {
-        uart_init_and_welcome();
-    }
-    
-    // Send character by character with explicit blocking to force immediate TX
-    // This is more aggressive than uart_puts + uart_tx_wait_blocking
+    // Send to ESP32 on UART1 (GP8/GP9)
     while (*str) {
-        uart_putc_raw(UART_ID, *str);
+        uart_putc_raw(ESP_UART_ID, *str);
         str++;
     }
+    uart_tx_wait_blocking(ESP_UART_ID);
     
-    // Ensure all characters have been transmitted
-    uart_tx_wait_blocking(UART_ID);
+    // Also send to HID console for visibility
+    #ifdef CONSOLE_ENABLE
+    printf("%s", str);
+    #endif
+}
+
+// Send debug string to UART0 and HID console
+void uart_debug_print(const char* str) {
+    if (!str) return;
+    
+    // Send to UART0 (GP0) in small chunks to prevent fragmentation
+    // RP2040 UART has 32-byte FIFO, so we send in 16-byte chunks with delays
+    if (!uart0_initialized) uart_init_and_welcome();
+    
+    const char* p = str;
+    int chunk_count = 0;
+    
+    while (*p) {
+        uart_putc_raw(DEBUG_UART_ID, *p);
+        p++;
+        chunk_count++;
+        
+        // Every 16 characters, wait for TX FIFO to empty
+        if (chunk_count >= 16) {
+            uart_tx_wait_blocking(DEBUG_UART_ID);
+            wait_us(500);  // Wait 500us between chunks
+            chunk_count = 0;
+        }
+    }
+    
+    // Final wait to ensure everything is sent
+    uart_tx_wait_blocking(DEBUG_UART_ID);
+    wait_us(1000);  // 1ms final delay
+    
+    // Also send to HID console (requires CONSOLE_ENABLE = yes in rules.mk)
+    #ifdef CONSOLE_ENABLE
+    uprintf("%s", str);
+    #endif
 }
 
 void uart_init_rx(void) {
-    // Configure RX pin for UART peripheral so we can receive from ESP32
-    // Default RX is GP1 for uart0
-#ifndef UART_RX_PIN
-#define UART_RX_PIN 1
-#endif
-    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
-    // Ensure UART is initialized
-    if (!uart_initialized) uart_init_and_welcome();
+    // Configure RX pin for ESP32 UART (UART1 GP9)
+    if (!uart1_initialized) uart_init_and_welcome();
+    gpio_set_function(ESP_RX_PIN, GPIO_FUNC_UART);
 }
 
 int uart_poll_byte(void) {
-    if (!uart_initialized) return -1;
-    if (uart_is_readable(UART_ID)) {
-        int c = uart_getc(UART_ID);
-        return c;
+    if (!uart1_initialized) return -1;
+    if (uart_is_readable(ESP_UART_ID)) {
+        return uart_getc(ESP_UART_ID);
     }
     return -1;
 }

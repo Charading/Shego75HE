@@ -55,7 +55,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, TG(3), SETTINGS_OPEN, MENU_DOWN, TIMER_OPEN
     ),
     [2] = SHEGO75HE(
-        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+        QK_BOOT, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, 
@@ -100,6 +100,10 @@ void keyboard_post_init_user(void) {
     setPinInputHigh(ENCODER_SW_PIN);
     setPinInputHigh(GP5);
     setPinInputHigh(GP6);
+    
+    // Initialize LED control pin (GP23) as output, start with LED off
+    setPinOutput(GP23);
+    writePinLow(GP23);
     
     // Initialize UART on GP8/GP9 (uart1)
     uart_init_and_welcome();
@@ -203,9 +207,6 @@ void matrix_scan_user(void) {
 // when layer 3 becomes active and BOARD_FOCUS when it leaves. We also
 // manage the lighting override for layer3 so those LEDs are forced.
 layer_state_t layer_state_set_user(layer_state_t state) {
-    // DISABLED FOR TESTING
-    return state;
-    
     static bool prev_l3 = false;
     bool now_l3 = (state & (1UL << 3));
     if (now_l3 && !prev_l3) {
