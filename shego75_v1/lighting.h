@@ -1,6 +1,8 @@
 #pragma once
 #include "quantum.h"
 
+#define LED_TOG_PIN GP23
+
 // Lighting helper hooks used by the keyboard firmware.
 // These functions are implemented in lighting.c and are safe to call from
 // other modules (socd.c, keymap.c, etc.).

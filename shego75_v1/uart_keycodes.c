@@ -9,10 +9,10 @@
 #endif
 
 // Debug state variables
-static bool adc_debug_enabled = true;   // Start enabled
+static bool adc_debug_enabled = false;   // Start disabled (no UART debug output)
 static bool key_debug_enabled = false;   // Start disabled
 static bool raw_debug_enabled = false;    // Start disabled
-static bool led_enabled = false;         // Start with LED off
+static bool led_enabled = true;          // Start with LED on (AO3401 P-channel: LOW = ON)
 // SOCD lives in socd.c
 
 // Toggle functions
@@ -46,10 +46,10 @@ void toggle_raw_debug(void) {
 void toggle_led(void) {
     led_enabled = !led_enabled;
     if (led_enabled) {
-        writePinHigh(GP23);
+        writePinLow(GP23);  // AO3401 P-channel: LOW = ON
         uart_debug_print("[LED] LED: ON\n");
     } else {
-        writePinLow(GP23);
+        writePinHigh(GP23);  // AO3401 P-channel: HIGH = OFF
         uart_debug_print("[LED] LED: OFF\n");
     }
 }

@@ -97,24 +97,25 @@ const uint16_t encoder_press_map[][1] = {
 // Initialize UART after QMK is fully initialized
 void keyboard_post_init_user(void) {
     // Set encoder switch pin and enable internal pull-ups for encoder pins (GP5/GP6)
-    setPinInputHigh(ENCODER_SW_PIN);
-    setPinInputHigh(GP5);
-    setPinInputHigh(GP6);
-    
-    // Initialize LED control pin (GP23) as output, start with LED off
-    setPinOutput(GP23);
-    writePinLow(GP23);
-    
-    // Initialize UART on GP8/GP9 (uart1)
+    setPinInputHigh(ENCODER_SW_PIN); // Encoder switch GP4
+    setPinInputHigh(ENCODER_A_PIN); // Encoder A GP5
+    setPinInputHigh(ENCODER_B_PIN); // Encoder B GP6
+
+    // Initialize LED control pin as output, start with LED ON
+    // AO3401 is P-channel MOSFET: LOW = ON, HIGH = OFF
+    setPinOutput(LED_TOG_PIN);
+    writePinLow(LED_TOG_PIN);  // Start with LEDs ON
+
+    // Initialize UART on GP8/GP9 (uart1) - for ESP32 debug and menu control 
     uart_init_and_welcome();
     uart_init_rx();
     
     // Now safe to send debug messages
     uart_send_string("[keymap] keyboard_post_init_user\n");
     
-    // RGB and lighting still disabled for now
-    // rgb_matrix_enable();
-    // lighting_init();
+    // Enable RGB matrix and lighting
+    rgb_matrix_enable();
+    lighting_init();
 }
 
 // Encoder handling - works alongside encoder_map

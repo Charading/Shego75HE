@@ -9,5 +9,7 @@
 // Encoder switch (optional - not part of standard encoder config)
 #ifndef ENCODER_SW_PIN
 #define ENCODER_SW_PIN GP4
+#define ENCODER_A_PIN GP5
+#define ENCODER_B_PIN GP6
 #endif
 // #define ENCODER_DIRECTION_FLIP
