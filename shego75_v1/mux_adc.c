@@ -14,6 +14,11 @@
 
 #define DEBOUNCE_MS 5
 
+// ESP_RESET_PIN definition (GP3 - bootloader trigger pin, must be HIGH during boot)
+#ifndef ESP_RESET_PIN
+#define ESP_RESET_PIN GP3
+#endif
+
 // NOTE: On this board the ADG732 EN pins are grounded (always enabled).
 // We therefore select each ADG732 using its CS pin (active low) and latch
 // addresses with the WR pin. If you have external EN pins, you can enable
@@ -57,22 +62,51 @@ static inline void select_mux_channel(uint8_t channel) {
 #endif
 }
 
+// Initialize ESP_RESET_PIN early to prevent bootloader trigger
+// DISABLED FOR TESTING
+/*
+void keyboard_pre_init_kb(void) {
+    // Ensure ESP reset pin (GP3) stays HIGH to avoid bootloader mode
+    setPinOutput(ESP_RESET_PIN);
+    writePinHigh(ESP_RESET_PIN);
+}
+*/
+
 void matrix_init_custom(void) {
-    // Diagnostic stub: do minimal init and skip full MUX setup.
-    // Debug print so we can see whether init completes
-    uart_send_string("[mux_adc] matrix_init_custom start\n");
-    // This prevents the custom scanning code from running until we verify it's safe.
-    // Keep pin setup minimal so other code can run without touching ADC/MUXs.
+    // Ensure ESP_RESET_PIN stays HIGH
+    setPinOutput(ESP_RESET_PIN);
+    writePinHigh(ESP_RESET_PIN);
+    
+    // Minimal MUX pin setup
     setPinOutput(MUX_A0);
     setPinOutput(MUX_A1);
     setPinOutput(MUX_A2);
+    setPinOutput(MUX_A3);
+    setPinOutput(MUX_A4);
+    
+#ifdef MUX_WR
+    setPinOutput(MUX_WR);
+    writePinHigh(MUX_WR);
+#endif
 
-    // Initialize state for all possible keys (safe defaults)
+#ifdef MUX_CS1
+    setPinOutput(MUX_CS1);
+    writePinHigh(MUX_CS1);
+#endif
+#ifdef MUX_CS2
+    setPinOutput(MUX_CS2);
+    writePinHigh(MUX_CS2);
+#endif
+#ifdef MUX_CS3
+    setPinOutput(MUX_CS3);
+    writePinHigh(MUX_CS3);
+#endif
+
+    // Initialize key state arrays
     for (uint8_t i = 0; i < MAX_KEYS; i++) {
         key_pressed[i] = false;
         key_timer[i] = 0;
     }
-    uart_send_string("[mux_adc] matrix_init_custom done\n");
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {

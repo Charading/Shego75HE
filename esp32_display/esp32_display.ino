@@ -21,6 +21,12 @@
 #define BUTTON_DOWN 13    // Down/Next button  
 #define BUTTON_SELECT 15  // Select button
 
+// Backlight control (PWM via AO3401A transistor on GPIO25)
+#define BACKLIGHT_PIN 25
+#define BACKLIGHT_PWM_CHANNEL 0
+#define BACKLIGHT_PWM_FREQ 5000
+#define BACKLIGHT_PWM_RESOLUTION 8  // 0-255
+
 // UART pins for QMK communication
 #define QMK_RX_PIN 32     // ESP32 receives from RP2040
 #define QMK_TX_PIN 33     // ESP32 sends to RP2040
@@ -81,6 +87,9 @@ unsigned long timerStartTime = 0;
 bool stopwatchRunning = false;
 unsigned long stopwatchStartTime = 0;
 unsigned long stopwatchElapsed = 0;
+
+// Backlight brightness (0-255, PWM duty cycle)
+uint8_t backlightBrightness = 255;  // start at max
 
 // Maximum GIF size allowed (1.5 MB)
 #define MAX_GIF_SIZE_BYTES (1536UL * 1024UL)
@@ -205,6 +214,9 @@ void fileClose(void *pHandle);
 int32_t fileRead(GIFFILE *pFile, uint8_t *pBuf, int32_t iLen);
 int32_t fileSeek(GIFFILE *pFile, int32_t iPosition);
 bool copyFile(const char *srcPath, const char *dstPath);
+void setBacklightBrightness(uint8_t brightness);
+void backlightUp();
+void backlightDown();
 
 void setup()
 {
@@ -259,6 +271,13 @@ void setup()
   delay(120);
   tft.init();
   delay(100);
+  
+  // Initialize PWM backlight control (AO3401A transistor on GPIO25)
+  // ESP32 Arduino 3.x uses ledcAttach instead of ledcSetup/ledcAttachPin
+  ledcAttach(BACKLIGHT_PIN, BACKLIGHT_PWM_FREQ, BACKLIGHT_PWM_RESOLUTION);
+  ledcWrite(BACKLIGHT_PIN, backlightBrightness);  // Start at max brightness
+  Serial.printf("Backlight PWM initialized on GPIO%d at brightness %d\n", BACKLIGHT_PIN, backlightBrightness);
+  
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
   // Set inclusive end coordinates for display (used by GIFDraw clipping)
@@ -825,6 +844,14 @@ void handleQMKCommands() {
         }
       }
       QMKSerial.println("MENU_CYCLED_LEFT");
+    }
+    else if (command == "TFT_BRIGHTNESS_UP") {
+      backlightUp();
+      QMKSerial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+    }
+    else if (command == "TFT_BRIGHTNESS_DOWN") {
+      backlightDown();
+      QMKSerial.printf("BRIGHTNESS:%d\n", backlightBrightness);
     }
     else {
       QMKSerial.println("UNKNOWN_COMMAND");
@@ -1873,4 +1900,30 @@ void drawDebugPopup() {
   drawDebugPopupInline();
   tft.endWrite();
   if (spiMutex) xSemaphoreGive(spiMutex);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BACKLIGHT CONTROL (PWM via AO3401A transistor)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+void setBacklightBrightness(uint8_t brightness) {
+  backlightBrightness = brightness;
+  ledcWrite(BACKLIGHT_PIN, backlightBrightness);
+  Serial.printf("Backlight brightness set to %d\n", backlightBrightness);
+}
+
+void backlightUp() {
+  if (backlightBrightness < 255) {
+    backlightBrightness = min(255, backlightBrightness + 25);
+    ledcWrite(BACKLIGHT_PIN, backlightBrightness);
+    Serial.printf("Backlight UP -> %d\n", backlightBrightness);
+  }
+}
+
+void backlightDown() {
+  if (backlightBrightness > 0) {
+    backlightBrightness = max(0, backlightBrightness - 25);
+    ledcWrite(BACKLIGHT_PIN, backlightBrightness);
+    Serial.printf("Backlight DOWN -> %d\n", backlightBrightness);
+  }
 }

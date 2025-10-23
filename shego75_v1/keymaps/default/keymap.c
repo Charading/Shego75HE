@@ -96,18 +96,21 @@ const uint16_t encoder_press_map[][1] = {
 
 // Initialize UART after QMK is fully initialized
 void keyboard_post_init_user(void) {
-    uart_send_string("[keymap] keyboard_post_init_user\n");
-    // Set encoder switch pin and initialize UART
-    // enable internal pull-ups for encoder switch and encoder pins (GP5/GP6)
+    // Set encoder switch pin and enable internal pull-ups for encoder pins (GP5/GP6)
     setPinInputHigh(ENCODER_SW_PIN);
     setPinInputHigh(GP5);
     setPinInputHigh(GP6);
-    // initialize UART TX/RX and send welcome
+    
+    // Initialize UART on GP8/GP9 (uart1)
     uart_init_and_welcome();
     uart_init_rx();
-    // ensure RGB matrix is enabled and set a dim red baseline (~5% brightness)
-    rgb_matrix_enable();
-    lighting_init();
+    
+    // Now safe to send debug messages
+    uart_send_string("[keymap] keyboard_post_init_user\n");
+    
+    // RGB and lighting still disabled for now
+    // rgb_matrix_enable();
+    // lighting_init();
 }
 
 // Encoder handling - works alongside encoder_map
@@ -123,7 +126,6 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 // Encoder switch handling (simple press only).
 void matrix_scan_user(void) {
     static bool encoder_switch_pressed = false;
-    // Active low (assuming pullup)
     // Active low (assuming pullup)
     bool switch_state = !readPin(ENCODER_SW_PIN);
 
@@ -201,6 +203,9 @@ void matrix_scan_user(void) {
 // when layer 3 becomes active and BOARD_FOCUS when it leaves. We also
 // manage the lighting override for layer3 so those LEDs are forced.
 layer_state_t layer_state_set_user(layer_state_t state) {
+    // DISABLED FOR TESTING
+    return state;
+    
     static bool prev_l3 = false;
     bool now_l3 = (state & (1UL << 3));
     if (now_l3 && !prev_l3) {

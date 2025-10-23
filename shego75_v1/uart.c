@@ -46,8 +46,14 @@ static bool uart_initialized = false;
 #define GP29 29
 #endif
 
-// Use uart0 on GP0 as the TX pin (only define if not provided by board headers)
-#ifndef UART_ID
+// UART configuration - select uart0 or uart1 based on UART_DRIVER_INDEX
+#ifndef UART_DRIVER_INDEX
+#define UART_DRIVER_INDEX 0
+#endif
+
+#if UART_DRIVER_INDEX == 1
+#define UART_ID uart1
+#else
 #define UART_ID uart0
 #endif
 
