@@ -6,7 +6,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #002fff 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00fd44 0%, #ed0606 100%);
   color: #333;
   overflow-x: hidden;
 }
@@ -20,7 +20,7 @@ body {
 }
 
 header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00d419 0%, #005f15 100%);
   color: rgb(35, 35, 35);
   padding: 20px 30px;
   text-align: center;
@@ -34,8 +34,8 @@ header h1 {
 /* Tabs */
 .tabs {
   display: flex;
-  background: #f5f5f5;
-  border-bottom: 2px solid #ddd;
+  background: #303030;
+  border-bottom: 2px solid #151515;
 }
 
 .tab-button {
@@ -51,13 +51,13 @@ header h1 {
 }
 
 .tab-button:hover {
-  background: #e8e8e8;
+  background: #101010;
 }
 
 .tab-button.active {
-  background: white;
-  color: #667eea;
-  border-bottom: 3px solid #667eea;
+  background: #1f1f1f;
+  color: #ffffff;
+  border-bottom: 3px solid #09ff00;
 }
 
 .tab-content {
@@ -82,7 +82,7 @@ header h1 {
 }
 
 .gif-section h2 {
-  color: #667eea;
+  color: #1c9a00;
   margin-bottom: 20px;
   font-size: 1.8em;
 }
@@ -90,7 +90,7 @@ header h1 {
 .file-selector {
   text-align: center;
   padding: 40px;
-  background: #f9f9f9;
+  background: #171717;
   border-radius: 10px;
   margin-bottom: 30px;
 }
@@ -108,8 +108,8 @@ header h1 {
 .gif-preview img {
   max-width: 400px;
   max-height: 300px;
-  border: 3px solid #667eea;
-  border-radius: 8px;
+  /* border: 3px solid #00ff2f; */
+  /* border-radius: 8px; */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -136,22 +136,22 @@ header h1 {
 }
 
 .btn-primary {
-  background: #667eea;
-  color: white;
+  background: #00aa00;
+  color: rgb(255, 255, 255);
   padding: 15px 40px;
   font-size: 1.1em;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #5568d3;
+  background: #00d600;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px #00ff0066;
 }
 
 .btn-destination {
-  background: white;
-  border: 2px solid #667eea;
-  color: #667eea;
+  background: #151515;
+  border: 2px solid #151515;
+  color: #c1c1c1;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -164,14 +164,14 @@ header h1 {
 }
 
 .btn-destination:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
-  transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(102, 126, 234, 0.3);
+  background: #101010;
+  color: rgb(255, 255, 255);
+  /* transform: translateY(-3px); */
+  /* box-shadow: 0 6px 15px rgba(0, 255, 26, 0.3); */
 }
 
 .btn-secondary {
-  background: #ddd;
+  background: #00b312;
   color: #333;
 }
 
@@ -204,19 +204,19 @@ header h1 {
 
 /* Keyboard Layout Tab */
 .keyboard-section h2 {
-  color: #667eea;
+  color: #00aa00;
   margin-bottom: 10px;
   font-size: 1.8em;
 }
 
 .description {
-  color: #666;
+  color: #4d4d4d;
   margin-bottom: 30px;
   font-size: 1.1em;
 }
 
 .keyboard-layout {
-  background: #2c2c2c;
+  background: #151515;
   padding: 30px;
   border-radius: 12px;
   display: inline-block;
@@ -233,29 +233,29 @@ header h1 {
 .key {
   min-width: 50px;
   height: 50px;
-  background: linear-gradient(145deg, #ffffff, #e6e6e6);
+  background: linear-gradient(180deg, #252525, #1e1e1e);
   border: none;
   border-radius: 6px;
   font-size: 0.9em;
   font-weight: 600;
-  color: #333;
+  color: #858585;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(52, 52, 52, 0.8);
   position: relative;
 }
 
 .key:hover {
-  background: linear-gradient(145deg, #667eea, #5568d3);
+  background: linear-gradient(180deg, #333333, #333333);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 5px 12px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 5px 12px rgba(14, 102, 0, 0.5);
 }
 
 .key.selected {
-  background: linear-gradient(145deg, #764ba2, #667eea);
-  color: white;
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+  background: linear-gradient(180deg, #00aa00, #009900);
+  color: rgb(255, 255, 255);
+  box-shadow: 0 0 20px rgba(13, 95, 0, 0.8);
 }
 
 .key.modified::after {
@@ -283,9 +283,9 @@ header h1 {
 .key-editor {
   margin-top: 40px;
   padding: 30px;
-  background: #f9f9f9;
+  background: #151515;
   border-radius: 10px;
-  border: 2px solid #667eea;
+  border: 2px solid #151515;
   animation: slideDown 0.3s;
 }
 
@@ -305,7 +305,7 @@ header h1 {
 }
 
 .key-editor h3 {
-  color: #667eea;
+  color: #c1c1c1;
   margin-bottom: 20px;
   font-size: 1.5em;
 }
@@ -330,7 +330,7 @@ header h1 {
 
 #threshold-value {
   font-weight: bold;
-  color: #667eea;
+  color: #c1c1c1;
   font-size: 1.2em;
 }
 

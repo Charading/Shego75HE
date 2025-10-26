@@ -2,6 +2,14 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+// Enable hot reload in development
+try {
+  require('electron-reload')(__dirname, {
+    electron: require(`${__dirname}/node_modules/electron`),
+    ignored: /node_modules|[\/\\]\./
+  });
+} catch (_) {}
+
 let mainWindow;
 
 function createWindow() {
