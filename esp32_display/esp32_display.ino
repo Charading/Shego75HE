@@ -370,11 +370,15 @@ void setup()
         if (sdGif) sdGif.close();
       }
     } else {
-      Serial.printf("Existing SPIFFS GIF corrupted at %s, using first SD GIF\n", existingSpiffsPath.c_str());
+      Serial.printf("Existing SPIFFS GIF corrupted at %s, opening menu\n", existingSpiffsPath.c_str());
       existingGif.close();
       currentGifIndex = 0;
-      currentLoadedGif = gifFiles[0];
-      currentGifPath = "/" + gifFiles[0];
+      currentLoadedGif = "";
+      currentGifPath = "";
+      // Set flag to enter menu after setup
+      inMenu = true;
+      menuSelection = 0;
+      menuTimeout = millis() + 60000; // Longer timeout on startup
     }
   } else {
     Serial.println("No existing SPIFFS GIF found, opening menu for selection...");
@@ -400,6 +404,9 @@ void setup()
     Serial.println("Failed to create SPI mutex!");
   }
 
+  // Initialize I2C GIF receiver (SDA=GPIO13, SCL=GPIO14)
+  i2cInit();
+
   tft.fillScreen(TFT_BLACK);
   
   // If we're starting in menu mode, draw the menu right away
@@ -413,6 +420,7 @@ void loop()
   handleButtons();
   handleQMKCommands();
   handleSerialCommands();  // Handle commands from Serial Monitor
+  i2cLoop();  // Process I2C GIF transfers
   
   // Update timer if running
   if (timerRunning) {
@@ -423,7 +431,13 @@ void loop()
     // Menu mode - handle timeout (except for timer/stopwatch menus)
     if (currentMenuType == MENU_GIF || currentMenuType == MENU_SETTINGS) {
       if (millis() - menuTimeout > MENU_TIMEOUT) {
-        exitMenu();
+        // Only exit menu if there's a valid GIF to play
+        if (currentGifPath != "" && SPIFFS.exists(currentGifPath.c_str())) {
+          exitMenu();
+        } else {
+          // No valid GIF - reset timeout to keep menu open
+          menuTimeout = millis();
+        }
       }
     }
   } else {
@@ -1134,6 +1148,20 @@ void selectCurrentGif() {
   // Now, use the copyFile function
   if (copyFile(sdPath.c_str(), "/current.gif")) {
     Serial.println("File copied successfully.");
+    
+    // Verify the file exists and is readable before proceeding
+    delay(50); // Extra time for SPIFFS to settle
+    if (!SPIFFS.exists("/current.gif")) {
+      Serial.println("ERROR: File copy reported success but file doesn't exist!");
+      tft.fillScreen(TFT_RED);
+      tft.setCursor(10, 60);
+      tft.setTextColor(TFT_WHITE);
+      tft.print("Copy verification failed!");
+      delay(2000);
+      drawMenu();
+      return;
+    }
+    
     tft.fillScreen(TFT_GREEN);
     tft.setCursor(10, 60);
     tft.setTextColor(TFT_BLACK);
@@ -1805,6 +1833,9 @@ bool copyFile(const char *srcPath, const char *dstPath) {
 
   srcFile.close();
   dstFile.close();
+  
+  // Give SPIFFS time to finalize the file (flush buffers, update directory)
+  delay(100);
 
   Serial.printf("Copied %u bytes\n", bytesCopied);
   return bytesCopied == fileSize;

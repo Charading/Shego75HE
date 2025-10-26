@@ -24,7 +24,6 @@ const gifPreview = document.getElementById('gif-preview');
 const statusMessage = document.getElementById('status-message');
 
 const sendScreenBtn = document.getElementById('send-screen');
-const sendSpiffsBtn = document.getElementById('send-spiffs');
 const sendSdBtn = document.getElementById('send-sd');
 
 selectGifBtn.addEventListener('click', async () => {
@@ -44,7 +43,6 @@ selectGifBtn.addEventListener('click', async () => {
     
     // Enable destination buttons
     sendScreenBtn.disabled = false;
-    sendSpiffsBtn.disabled = false;
     sendSdBtn.disabled = false;
     
     statusMessage.textContent = '';
@@ -70,8 +68,7 @@ async function sendGif(destination) {
 }
 
 sendScreenBtn.addEventListener('click', () => sendGif('Screen'));
-sendSpiffsBtn.addEventListener('click', () => sendGif('SPIFFS'));
-sendSdBtn.addEventListener('click', () => sendGif('SD Card'));
+sendSdBtn.addEventListener('click', () => sendGif('SD'));
 
 // Keyboard Layout functionality
 const keyboardLayout = document.getElementById('keyboard-layout');
