@@ -25,9 +25,20 @@
 // Hall effect threshold - key is pressed when ADC is BELOW this value
 #define SENSOR_THRESHOLD 450
 
+// Auto-calibration settings
+// Threshold percentage: key press triggers when ADC drops below this % of baseline
+// Example: 85 means key actuates when value drops to 85% of resting state (15% drop)
+// Lower = more sensitive (earlier actuation), Higher = less sensitive (deeper press required)
+#ifndef CALIBRATION_THRESHOLD_PERCENT
+#define CALIBRATION_THRESHOLD_PERCENT 85
+#endif
+
 
 
 // QMK Matrix functions
 void matrix_init_custom(void);
 bool matrix_scan_custom(matrix_row_t current_matrix[]);
+
+// Auto-calibration function
+void calibrate_sensors(void);
 

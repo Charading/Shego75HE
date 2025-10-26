@@ -36,6 +36,11 @@ static uint32_t last_adc_print_time = 0;
 static bool key_pressed[MAX_KEYS];
 static uint32_t key_timer[MAX_KEYS];
 
+// Auto-calibration storage
+static uint16_t key_baseline[MAX_KEYS];      // Baseline (resting) ADC value for each key
+static uint16_t key_threshold[MAX_KEYS];     // Dynamic threshold for each key
+static bool calibration_complete = false;    // Flag indicating calibration status
+
 // Debug counter to limit output
 // Debug counters (may be used later); mark volatile to avoid unused warnings
 static volatile uint32_t debug_counter = 0;
@@ -112,7 +117,106 @@ void matrix_init_custom(void) {
     for (uint8_t i = 0; i < MAX_KEYS; i++) {
         key_pressed[i] = false;
         key_timer[i] = 0;
+        key_baseline[i] = 0;
+        key_threshold[i] = SENSOR_THRESHOLD; // Use default until calibration completes
     }
+}
+
+// Auto-calibration: Scan all keys and establish baseline + dynamic thresholds
+// This should be called after matrix_init_custom, during keyboard_post_init_kb
+void calibrate_sensors(void) {
+    pin_t adc_pins[3] = {MUX1_ADC_PIN, MUX2_ADC_PIN, MUX3_ADC_PIN};
+    const mux32_ref_t* mux_tables[3] = {mux1_channels, mux2_channels, mux3_channels};
+    
+    // Perform multiple reads per key and average them for stability
+    const uint8_t CALIBRATION_SAMPLES = 5;
+    uint32_t sample_accumulator[MAX_KEYS] = {0};
+    uint8_t sample_count[MAX_KEYS] = {0};
+    
+    // Collect samples
+    for (uint8_t sample = 0; sample < CALIBRATION_SAMPLES; sample++) {
+        for (uint8_t mux_idx = 0; mux_idx < 3; mux_idx++) {
+            // Select appropriate CS
+#ifdef MUX_CS1
+            if (mux_idx == 0) { writePinLow(MUX_CS1); } else { writePinHigh(MUX_CS1); }
+#endif
+#ifdef MUX_CS2
+            if (mux_idx == 1) { writePinLow(MUX_CS2); } else { writePinHigh(MUX_CS2); }
+#endif
+#ifdef MUX_CS3
+            if (mux_idx == 2) { writePinLow(MUX_CS3); } else { writePinHigh(MUX_CS3); }
+#endif
+
+            for (uint8_t ch = 0; ch < 32; ch++) {
+                select_mux_channel(ch);
+                wait_us(100);
+
+                uint16_t adc_val = read_adc_pin(adc_pins[mux_idx]);
+                
+                // Filter out anomalous high values
+                const uint16_t ADC_MAX_VALID = 800;
+                if (adc_val > ADC_MAX_VALID) {
+                    adc_val = 4095;
+                }
+
+                const mux32_ref_t* key_mapping = &mux_tables[mux_idx][ch + 1];
+                if (!key_mapping || key_mapping->sensor == 0) continue;
+
+                uint16_t sensor = key_mapping->sensor;
+                uint8_t matrix_row = (sensor - 1) / MATRIX_COLS;
+                uint8_t matrix_col = (sensor - 1) % MATRIX_COLS;
+
+                if (matrix_row >= MATRIX_ROWS || matrix_col >= MATRIX_COLS) continue;
+
+                uint16_t key_idx = (matrix_row * MATRIX_COLS) + matrix_col;
+                if (key_idx >= MAX_KEYS) continue;
+
+                // Accumulate valid readings only (skip obvious disconnects)
+                if (adc_val < 4000) {
+                    sample_accumulator[key_idx] += adc_val;
+                    sample_count[key_idx]++;
+                }
+            }
+
+            // Release CS
+#ifdef MUX_CS1
+            writePinHigh(MUX_CS1);
+#endif
+#ifdef MUX_CS2
+            writePinHigh(MUX_CS2);
+#endif
+#ifdef MUX_CS3
+            writePinHigh(MUX_CS3);
+#endif
+        }
+        wait_ms(10); // Small delay between calibration samples
+    }
+    
+    // Calculate baseline and threshold for each key
+    for (uint8_t key_idx = 0; key_idx < MAX_KEYS; key_idx++) {
+        if (sample_count[key_idx] > 0) {
+            // Calculate average baseline
+            key_baseline[key_idx] = sample_accumulator[key_idx] / sample_count[key_idx];
+            
+            // Calculate dynamic threshold as percentage of baseline
+            // CALIBRATION_THRESHOLD_PERCENT is defined in mux_adc.h (e.g., 85 = 85% of baseline)
+            key_threshold[key_idx] = (key_baseline[key_idx] * CALIBRATION_THRESHOLD_PERCENT) / 100;
+            
+            // Safety clamps: ensure threshold is reasonable
+            if (key_threshold[key_idx] < 100) {
+                key_threshold[key_idx] = 100; // Minimum threshold
+            }
+            if (key_threshold[key_idx] > 700) {
+                key_threshold[key_idx] = 700; // Maximum threshold
+            }
+        } else {
+            // No valid readings - use default
+            key_baseline[key_idx] = 512;
+            key_threshold[key_idx] = SENSOR_THRESHOLD;
+        }
+    }
+    
+    calibration_complete = true;
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
@@ -188,7 +292,9 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
                 adc_values[key_idx] = adc_val;
             }
 
-            bool should_press = (adc_val < SENSOR_THRESHOLD);
+            // Use dynamic per-key threshold if calibration is complete
+            uint16_t threshold = calibration_complete ? key_threshold[key_idx] : SENSOR_THRESHOLD;
+            bool should_press = (adc_val < threshold);
 
             // Debounce: only change state if debounce time elapsed
             if (timer_elapsed32(key_timer[key_idx]) > DEBOUNCE_MS) {

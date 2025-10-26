@@ -5,6 +5,7 @@
 #include "../../uart_keycodes.h"
 #include "../../config.h"
 #include "../../lighting.h"
+#include "../../mux_adc.h"
 
 
 
@@ -116,6 +117,11 @@ void keyboard_post_init_user(void) {
     
     // Now safe to send debug messages
     uart_send_string("[keymap] keyboard_post_init_user\n");
+    
+    // Perform sensor auto-calibration (must be done with no keys pressed!)
+    uart_send_string("[keymap] Calibrating sensors...\n");
+    calibrate_sensors();
+    uart_send_string("[keymap] Calibration complete!\n");
     
     // Enable RGB matrix and lighting
     rgb_matrix_enable();

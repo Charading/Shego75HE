@@ -1,0 +1,19 @@
+{
+  "name": "keyboard-configurator",
+  "version": "1.0.0",
+  "description": "Electron app for keyboard configuration and GIF management",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": ["electron", "keyboard", "gif"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  }
+}
