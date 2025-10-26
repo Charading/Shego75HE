@@ -52,7 +52,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_PSCR, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_PGUP,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MENU_SELECT, KC_PGDN, 
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MENU_UP,
-        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, TG(3), SETTINGS_OPEN, MENU_DOWN, TIMER_OPEN
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MO(2),   KC_TRNS, TG(3), SETTINGS_OPEN, MENU_DOWN, TIMER_OPEN
     ),
     [2] = SHEGO75HE(
         QK_BOOT, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
@@ -100,6 +100,10 @@ void keyboard_post_init_user(void) {
     setPinInputHigh(ENCODER_SW_PIN); // Encoder switch GP4
     setPinInputHigh(ENCODER_A_PIN); // Encoder A GP5
     setPinInputHigh(ENCODER_B_PIN); // Encoder B GP6
+
+    // Initialize ESP32 reset control (AO3400 N-channel MOSFET on GP3)
+    // Start with ESP32 running: GP3 Hi-Z (no pull-up) = MOSFET off = ESP_EN high
+    setPinInput(GP3);  // Hi-Z without pull-up - ESP32 running (not in reset)
 
     // Initialize LED control pin as output, start with LED ON
     // AO3401 is P-channel MOSFET: LOW = ON, HIGH = OFF

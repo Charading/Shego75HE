@@ -102,8 +102,8 @@
 // #define ST7735_INITB
 // #define ST7735_GREENTAB
 // #define ST7735_GREENTAB2
-// #define ST7735_GREENTAB3
-#define ST7735_GREENTAB128    // For 128 x 128 display
+#define ST7735_GREENTAB3
+// #define ST7735_GREENTAB128    // For 128 x 128 display
 // #define ST7735_GREENTAB160x80 // For 160 x 80 display (BGR, inverted, 26 offset)
 // #define ST7735_ROBOTLCD       // For some RobotLCD Arduino shields (128x160, BGR, https://docs.arduino.cc/retired/getting-started-guides/TFT)
 // #define ST7735_REDTAB
@@ -113,7 +113,7 @@
 // If colours are inverted (white shows as black) then uncomment one of the next
 // 2 lines try both options, one of the options should correct the inversion.
 
-// #define TFT_INVERSION_ON
+#define TFT_INVERSION_ON
 // #define TFT_INVERSION_OFF
 
 // ##################################################################################

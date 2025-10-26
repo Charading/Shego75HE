@@ -13,7 +13,3 @@
 #define ENCODER_B_PIN GP6
 #endif
 // #define ENCODER_DIRECTION_FLIP
-
-// LED control pin (AO3401 P-channel MOSFET on GP23)
-// P-channel: LOW = ON, HIGH/Hi-Z = OFF
-#define LED_PIN GP23

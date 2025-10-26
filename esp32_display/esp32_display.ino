@@ -13,13 +13,13 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
-#define SD_CS_PIN 5
+#define SD_CS_PIN 26
 #define SD_MOSI 22
 #define SD_MISO 19
 #define SD_SCK 21
-#define BUTTON_UP 14      // Up/Previous button
-#define BUTTON_DOWN 13    // Down/Next button  
-#define BUTTON_SELECT 15  // Select button
+#define BUTTON_UP 36      // Up/Previous button
+#define BUTTON_DOWN 37    // Down/Next button  
+#define BUTTON_SELECT 38  // Select button
 
 // Backlight control (PWM via AO3401A transistor on GPIO25)
 #define BACKLIGHT_PIN 25
@@ -217,6 +217,8 @@ bool copyFile(const char *srcPath, const char *dstPath);
 void setBacklightBrightness(uint8_t brightness);
 void backlightUp();
 void backlightDown();
+void handleSerialCommands();
+void processCommand(String command);
 
 void setup()
 {
@@ -247,10 +249,11 @@ void setup()
   Serial.printf("CPU Frequency: %d MHz (power optimized)\n", getCpuFrequencyMhz());
   Serial.println("WiFi and Bluetooth disabled for low power operation");
 
-  // Initialize buttons
-  pinMode(BUTTON_UP, INPUT_PULLUP);
-  pinMode(BUTTON_DOWN, INPUT_PULLUP);
-  pinMode(BUTTON_SELECT, INPUT_PULLUP);
+  // Initialize buttons (GPIO36, 37, 38 with external pull-ups)
+  pinMode(BUTTON_UP, INPUT);
+  pinMode(BUTTON_DOWN, INPUT);
+  pinMode(BUTTON_SELECT, INPUT);
+  Serial.println("Buttons initialized on GPIO36(UP), GPIO37(DOWN), GPIO38(SELECT) with external pull-ups");
 
   // Initialize QMK Serial communication
   QMKSerial.begin(115200, SERIAL_8N1, QMK_RX_PIN, QMK_TX_PIN);
@@ -409,6 +412,7 @@ void loop()
 {
   handleButtons();
   handleQMKCommands();
+  handleSerialCommands();  // Handle commands from Serial Monitor
   
   // Update timer if running
   if (timerRunning) {
@@ -857,6 +861,151 @@ void handleQMKCommands() {
       QMKSerial.println("UNKNOWN_COMMAND");
     }
   }
+}
+
+// Handle commands from Serial Monitor (for testing/debugging)
+void handleSerialCommands() {
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+    
+    if (command.length() > 0) {
+      Serial.printf("Serial Command: %s\n", command.c_str());
+      processCommand(command);
+    }
+  }
+}
+
+// Process command (shared by both QMK UART and Serial Monitor)
+void processCommand(String command) {
+    if (command == "MENU_OPEN") {
+      if (!inMenu) {
+        enterMenu();
+        Serial.println("MENU_OPENED");
+      } else {
+        Serial.println("MENU_ALREADY_OPEN");
+      }
+    }
+    else if (command == "MENU_CLOSE") {
+      if (inMenu) {
+        exitMenu();
+        Serial.println("MENU_CLOSED");
+      } else {
+        Serial.println("MENU_NOT_OPEN");
+      }
+    }
+    else if (command == "MENU_UP") {
+      if (inMenu) {
+        if (currentMenuType == MENU_GIF) {
+          int total = gifCount + 1; // include Clear GIF
+          menuSelection = (menuSelection - 1 + total) % total;
+          Serial.printf("UP - selection: %d\n", menuSelection);
+          menuTimeout = millis(); // Reset timeout
+          drawMenu();
+        } else if (currentMenuType == MENU_SETTINGS) {
+          // 0=Back, 1=SOCD, 2=Debugging(skip), 3=Raw Keycodes, 4=Keypress, 5=ADC
+          do {
+            settingsSelection--;
+            if (settingsSelection < 0) settingsSelection = 5;
+          } while (settingsSelection == 2); // Skip "Debugging" header
+          menuTimeout = millis();
+          drawSettingsMenu();
+        } else if (currentMenuType == MENU_TIMER) {
+          if (!timerRunning) {
+            // Decrease time
+            timerMinutes = max(1, timerMinutes - 1);
+            drawTimerMenu();
+          } else {
+            // Reset if running
+            handleTimerSelection();
+          }
+          Serial.println("TIMER_UP");
+        }
+      } else {
+        Serial.println("MENU_NOT_OPEN");
+      }
+    }
+    else if (command == "MENU_DOWN") {
+      if (inMenu) {
+        if (currentMenuType == MENU_GIF) {
+          int total = gifCount + 1; // include Clear GIF
+          menuSelection = (menuSelection + 1) % total;
+          Serial.printf("DOWN - selection: %d\n", menuSelection);
+          menuTimeout = millis(); // Reset timeout
+          drawMenu();
+        } else if (currentMenuType == MENU_SETTINGS) {
+          // 0=Back, 1=SOCD, 2=Debugging(skip), 3=Raw Keycodes, 4=Keypress, 5=ADC
+          do {
+            settingsSelection++;
+            if (settingsSelection > 5) settingsSelection = 0;
+          } while (settingsSelection == 2); // Skip "Debugging" header
+          menuTimeout = millis();
+          drawSettingsMenu();
+        } else if (currentMenuType == MENU_TIMER) {
+          if (!timerRunning) {
+            // Increase time
+            timerMinutes = min(99, timerMinutes + 1);
+            drawTimerMenu();
+          } else {
+            // Reset if running
+            handleTimerSelection();
+          }
+          Serial.println("TIMER_DOWN");
+        }
+      } else {
+        Serial.println("MENU_NOT_OPEN");
+      }
+    }
+    else if (command == "MENU_SELECT") {
+      if (inMenu) {
+        if (currentMenuType == MENU_GIF) {
+          Serial.printf("SELECT - choosing GIF %d\n", menuSelection);
+          selectCurrentGif();
+        } else if (currentMenuType == MENU_SETTINGS) {
+          handleSettingsSelection();
+          Serial.println("SETTINGS_TOGGLED");
+        } else if (currentMenuType == MENU_TIMER) {
+          handleTimerSelection(); // SELECT in timer = start/pause
+          Serial.println("TIMER_SELECT");
+        }
+      } else {
+        Serial.println("MENU_NOT_OPEN");
+      }
+    }
+    else if (command == "STATUS") {
+      // Send current status
+      Serial.printf("STATUS: MENU=%s, GIF=%s, POS=%d, COUNT=%d\n", 
+                   inMenu ? "OPEN" : "CLOSED",
+                   currentGifIndex < gifCount ? gifFiles[currentGifIndex].c_str() : "NONE",
+                   menuSelection,
+                   gifCount);
+    }
+    else if (command == "SETTINGS_OPEN") {
+      enterSettingsMenu();
+      Serial.println("SETTINGS_OPENED");
+    }
+    else if (command == "TIMER_OPEN") {
+      enterTimerMenu();
+      Serial.println("TIMER_OPENED");
+    }
+    else if (command == "TFT_BRIGHTNESS_UP") {
+      backlightUp();
+      Serial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+    }
+    else if (command == "TFT_BRIGHTNESS_DOWN") {
+      backlightDown();
+      Serial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+    }
+    else if (command == "HELP") {
+      Serial.println("Available commands:");
+      Serial.println("MENU_OPEN, MENU_CLOSE, MENU_UP, MENU_DOWN, MENU_SELECT");
+      Serial.println("SETTINGS_OPEN, TIMER_OPEN");
+      Serial.println("TFT_BRIGHTNESS_UP, TFT_BRIGHTNESS_DOWN");
+      Serial.println("STATUS, HELP");
+    }
+    else {
+      Serial.println("UNKNOWN_COMMAND - type HELP for available commands");
+    }
 }
 
 void handleButtons() {

@@ -220,32 +220,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case RESET_ESP: {
             if (pressed) {
-                // Safer reset pulse for external ESP device.
-                // Idle state: configure pin as input with pull-up so we don't
-                // actively drive the line (avoids contention with target).
-                setPinInputHigh(ESP_RESET_PIN);
+                // ESP32 reset control via AO3400 N-channel MOSFET on GP3
+                // Normal: Hi-Z = MOSFET off, Reset: HIGH = MOSFET on
+                
+                // Send notification before reset
+                uart_send_string("RESET_ESP: resetting ESP32 via N-channel MOSFET\n");
 
-                // Send notification before pulsing so it appears on UART
-                uart_send_string("RESET_ESP: pulsing ESP reset pin\n");
-
-                // Determine assert/release levels depending on wiring.
-                #if ESP_RESET_ACTIVE_HIGH
-                            // Active HIGH: drive pin HIGH to assert reset
-                            setPinOutput(ESP_RESET_PIN);
-                            writePinHigh(ESP_RESET_PIN); // assert (active high)
-                            wait_ms(500);
-                            // Release: go back to input+pull-up
-                            setPinInputHigh(ESP_RESET_PIN);
-                            wait_ms(150);
-                #else
-                            // Active LOW (default): drive pin LOW to assert reset
-                            setPinOutput(ESP_RESET_PIN);
-                            writePinLow(ESP_RESET_PIN); // assert (active low)
-                            wait_ms(500);
-                            // Release: go back to input+pull-up
-                            setPinInputHigh(ESP_RESET_PIN);
-                            wait_ms(150);
-                #endif
+                // Assert reset: Drive GP3 HIGH to turn on N-channel MOSFET
+                // This pulls ESP_EN low, putting ESP32 in reset
+                setPinOutput(ESP_RESET_PIN);
+                writePinHigh(ESP_RESET_PIN);  // Turn on MOSFET -> ESP_EN goes LOW
+                wait_ms(500);                 // Hold reset for 500ms
+                
+                // Release reset: Make GP3 Hi-Z (no pull-up) to turn off N-channel MOSFET  
+                // This releases ESP_EN, allowing ESP32 to boot
+                setPinInput(ESP_RESET_PIN);     // Hi-Z without pull-up -> MOSFET off -> ESP_EN goes HIGH
+                wait_ms(150);                   // Wait for ESP32 to start booting
             }
             return false;
         }
