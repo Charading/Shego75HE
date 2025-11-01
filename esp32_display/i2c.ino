@@ -10,14 +10,14 @@
 #define I2C_SLAVE_ADDR 0x42  // ESP32 I2C slave address
 
 // Protocol constants
-#define I2C_CMD_START_TRANSFER 0x01
-#define I2C_CMD_DATA_CHUNK 0x02
-#define I2C_CMD_END_TRANSFER 0x03
+#define I2C_CMD_START_TRANSFER 0x10  // Match keyboard HID_REPORT_ID_START_GIF
+#define I2C_CMD_DATA_CHUNK 0x11      // Match keyboard HID_REPORT_ID_GIF_DATA
+#define I2C_CMD_END_TRANSFER 0x12    // Match keyboard HID_REPORT_ID_END_GIF
 #define I2C_CMD_ABORT 0x04
 
 // Transfer destination flags
-#define DEST_SPIFFS_IMMEDIATE 0x01  // Save to SPIFFS and display now
-#define DEST_SD_LATER 0x02          // Save to SD card for later
+#define DEST_SPIFFS_IMMEDIATE 0x01  // Save to SPIFFS and display now (DEST_SCREEN)
+#define DEST_SD_LATER 0x02          // Save to SD card for later (DEST_SD_CARD)
 
 // Transfer state
 enum TransferState {
@@ -74,12 +74,14 @@ void i2cInit() {
 
 // I2C receive interrupt handler
 void i2cReceiveHandler(int numBytes) {
+  Serial.printf("[I2C] Received %d bytes\n", numBytes);
   i2cRxIndex = 0;
   while (Wire.available() && i2cRxIndex < I2C_BUFFER_SIZE) {
     i2cRxBuffer[i2cRxIndex++] = Wire.read();
   }
   if (i2cRxIndex > 0) {
     i2cDataReady = true;
+    Serial.printf("[I2C] Buffer ready with %d bytes, first byte: 0x%02X\n", i2cRxIndex, i2cRxBuffer[0]);
   }
 }
 
@@ -91,6 +93,7 @@ void i2cRequestHandler() {
     status = 0x01;
   }
   Wire.write(status);
+  Serial.printf("[I2C] Status requested, sent: 0x%02X\n", status);
 }
 
 // Process incoming I2C data (call from main loop)
@@ -106,6 +109,7 @@ bool processI2CCommand(uint8_t *buffer, uint16_t length) {
   if (length < 1) return false;
 
   uint8_t cmd = buffer[0];
+  Serial.printf("[I2C] Processing command 0x%02X, length=%d\n", cmd, length);
 
   switch (cmd) {
     case I2C_CMD_START_TRANSFER: {
@@ -141,14 +145,16 @@ bool processI2CCommand(uint8_t *buffer, uint16_t length) {
 
     case I2C_CMD_DATA_CHUNK: {
       // Format: CMD(1) | DATA(...)
+      Serial.printf("[I2C] DATA_CHUNK received, length=%d\n", length);
       if (i2cTransfer.state != RECEIVING_DATA) {
-        Serial.println("I2C: DATA_CHUNK received but not in RECEIVING_DATA state");
+        Serial.printf("I2C: DATA_CHUNK received but not in RECEIVING_DATA state (state=%d)\n", i2cTransfer.state);
         return false;
       }
       return writeI2CDataChunk(&buffer[1], length - 1);
     }
 
     case I2C_CMD_END_TRANSFER: {
+      Serial.println("[I2C] END_TRANSFER received");
       return finalizeI2CTransfer();
     }
 

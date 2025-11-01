@@ -6,13 +6,17 @@
 #include <stdbool.h>
 
 // HID Report IDs (must match your Electron app)
-#define HID_REPORT_ID_GIF_DATA     0x01  // GIF data transfer
-#define HID_REPORT_ID_BUTTON_CMD   0x02  // Button press commands
-#define HID_REPORT_ID_STATUS       0x03  // Status responses
+// Using 0x10+ to avoid conflict with VIA (0x00-0x0F)
+#define HID_REPORT_ID_START_GIF    0x10  // Start GIF transfer (CMD_START_GIF)
+#define HID_REPORT_ID_GIF_DATA     0x11  // GIF data chunks (CMD_GIF_DATA)
+#define HID_REPORT_ID_END_GIF      0x12  // End GIF transfer (CMD_END_GIF)
+#define HID_REPORT_ID_STATUS       0x13  // Status responses
+// New: set per-key threshold
+#define HID_REPORT_ID_SET_THRESHOLD 0x20
 
-// Button Commands
-#define BUTTON_CMD_SEND_TO_SCREEN  0x01  // Display GIF on screen
-#define BUTTON_CMD_SAVE_TO_SD      0x02  // Save GIF to SD card
+// Destination flags (matches your config.js)
+#define DEST_SCREEN    0x01  // Display on screen
+#define DEST_SD_CARD   0x02  // Save to SD card
 
 // Storage flags
 #define STORAGE_SPIFFS   0x01    // Store in ESP32 flash
@@ -21,11 +25,13 @@
 // Function prototypes
 void hid_reports_init(void);
 void raw_hid_receive_user(uint8_t *data, uint8_t length);
-void send_status_to_host(uint8_t status_code);
+void send_status_to_host(uint8_t status, uint16_t chunk_index);
+// Process a received buffer (shared by raw HID and vendor bulk handler)
+void hid_process_received_buffer(uint8_t *buf, uint8_t length);
 
 // Status codes
-#define STATUS_OK                  0x00
-#define STATUS_TRANSFER_STARTED    0x01
-#define STATUS_CHUNK_RECEIVED      0x02
-#define STATUS_TRANSFER_COMPLETE   0x03
-#define STATUS_ERROR_INVALID       0xE3
+#define STATUS_OK                  0x01
+#define STATUS_TRANSFER_STARTED    0x02
+#define STATUS_CHUNK_RECEIVED      0x03
+#define STATUS_TRANSFER_COMPLETE   0x04
+#define STATUS_ERROR_INVALID       0x05

@@ -6,6 +6,9 @@
 #include "../../config.h"
 #include "../../lighting.h"
 #include "../../mux_adc.h"
+#include "../../i2c_esp32.h"
+#include "../../hid_reports.h"
+#include "../../vendor_bridge.h"
 
 
 
@@ -114,6 +117,8 @@ void keyboard_post_init_user(void) {
     // Initialize UART on GP8/GP9 (uart1) - for ESP32 debug and menu control 
     uart_init_and_welcome();
     uart_init_rx();
+    // Initialize HID report handling (sets up status reporting)
+    hid_reports_init();
     
     // Now safe to send debug messages
     uart_send_string("[keymap] keyboard_post_init_user\n");
@@ -122,6 +127,11 @@ void keyboard_post_init_user(void) {
     uart_send_string("[keymap] Calibrating sensors...\n");
     calibrate_sensors();
     uart_send_string("[keymap] Calibration complete!\n");
+    
+    // Initialize I2C for ESP32
+    i2c_esp32_init();
+    wait_ms(100);  // Give ESP32 time to be ready
+    i2c_esp32_test();  // Test connection
     
     // Enable RGB matrix and lighting
     rgb_matrix_enable();
@@ -212,6 +222,9 @@ void matrix_scan_user(void) {
 
     // Poll UART for incoming messages
     uart_receive_task();
+    
+    // Poll vendor USB endpoint for incoming bulk transfers
+    vendor_task();
 }
 
 // Called when the active layer state changes. We use this to send TFT_FOCUS
@@ -239,5 +252,4 @@ bool led_update_user(led_t led_state) {
     set_caps_override(caps);
     return true; // allow default handling
 }
-
 // Note: process_record_user is defined in uart_keycodes.c

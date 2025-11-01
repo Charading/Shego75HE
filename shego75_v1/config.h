@@ -1,6 +1,10 @@
 /* config.h - keyboard configuration for shego75_v1 */
 #pragma once
 
+// Enable vendor bulk endpoints for host app detection
+// (Actual vendor communication not yet implemented - falls back to raw HID)
+#define VENDOR_ENABLE
+
 // ============================================================================
 // AUTO-CALIBRATION CONFIGURATION
 // ============================================================================
@@ -19,6 +23,24 @@
 //
 // Default is 85% (15% drop from baseline triggers actuation)
 // ============================================================================
+
+// ============================================================================
+// I2C CONFIGURATION (for ESP32 communication)
+// ============================================================================
+// RGB is on GP17, so GP20/GP21 are available for I2C
+#define I2C_DRIVER I2CD1
+#define I2C1_SDA_PIN GP20
+#define I2C1_SCL_PIN GP21
+
+// ============================================================================
+// RAW HID CONFIGURATION (for Electron app communication)
+// ============================================================================
+// Define custom usage page to preserve report IDs on Windows
+// This prevents Windows HID from stripping the report ID byte
+#define RAW_USAGE_PAGE 0xFF60  // Custom vendor-defined usage page
+#define RAW_USAGE_ID   0x61    // Custom usage ID
+
+#define VENDOR_ENABLE
 
 // UART configuration - Dual UART setup
 // UART0 (GP0/GP1): Debug output

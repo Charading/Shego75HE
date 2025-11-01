@@ -42,3 +42,7 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]);
 // Auto-calibration function
 void calibrate_sensors(void);
 
+// Set a per-key sensitivity percent by key index
+// percent: sensitivity percent (e.g., 10 => trigger when value deviates +/-10% from baseline)
+void set_key_threshold(uint16_t key_idx, uint8_t percent);
+

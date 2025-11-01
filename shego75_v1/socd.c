@@ -54,22 +54,27 @@ bool socd_process_key(uint16_t keycode, bool pressed) {
                     d_suppressed = true;
                 }
                 a_suppressed = false;
-                return true; // allow A (it wins)
+                register_code(KC_A);
+                return false; // handled manually
             }
-            return true;
+            a_suppressed = false;
+            register_code(KC_A);
+            return false; // handled manually
         } else {
-            // A released. If A had been suppressed previously, just clear flag.
+            // A released
             a_pressed = false;
             if (a_suppressed) {
+                // A was suppressed, so it was never sent - don't send release
                 a_suppressed = false;
-                return false; // nothing to reassert
+                return false;
             }
-            // If A was the winning key and D is still held but suppressed, reassert D
+            // A was active. Release it and reassert D if needed
+            unregister_code(KC_A);
             if (d_pressed && d_suppressed) {
                 register_code(KC_D);
                 d_suppressed = false;
             }
-            return true;
+            return false; // handled manually
         }
     }
 
@@ -83,20 +88,26 @@ bool socd_process_key(uint16_t keycode, bool pressed) {
                     a_suppressed = true;
                 }
                 d_suppressed = false;
-                return true; // allow D
+                register_code(KC_D);
+                return false; // handled manually
             }
-            return true;
+            d_suppressed = false;
+            register_code(KC_D);
+            return false; // handled manually
         } else {
             d_pressed = false;
             if (d_suppressed) {
+                // D was suppressed, so it was never sent - don't send release
                 d_suppressed = false;
                 return false;
             }
+            // D was active. Release it and reassert A if needed
+            unregister_code(KC_D);
             if (a_pressed && a_suppressed) {
                 register_code(KC_A);
                 a_suppressed = false;
             }
-            return true;
+            return false; // handled manually
         }
     }
 
@@ -109,20 +120,26 @@ bool socd_process_key(uint16_t keycode, bool pressed) {
                     s_suppressed = true;
                 }
                 w_suppressed = false;
-                return true;
+                register_code(KC_W);
+                return false; // handled manually
             }
-            return true;
+            w_suppressed = false;
+            register_code(KC_W);
+            return false; // handled manually
         } else {
             w_pressed = false;
             if (w_suppressed) {
+                // W was suppressed, so it was never sent - don't send release
                 w_suppressed = false;
                 return false;
             }
+            // W was active. Release it and reassert S if needed
+            unregister_code(KC_W);
             if (s_pressed && s_suppressed) {
                 register_code(KC_S);
                 s_suppressed = false;
             }
-            return true;
+            return false; // handled manually
         }
     }
 
@@ -135,20 +152,26 @@ bool socd_process_key(uint16_t keycode, bool pressed) {
                     w_suppressed = true;
                 }
                 s_suppressed = false;
-                return true;
+                register_code(KC_S);
+                return false; // handled manually
             }
-            return true;
+            s_suppressed = false;
+            register_code(KC_S);
+            return false; // handled manually
         } else {
             s_pressed = false;
             if (s_suppressed) {
+                // S was suppressed, so it was never sent - don't send release
                 s_suppressed = false;
                 return false;
             }
+            // S was active. Release it and reassert W if needed
+            unregister_code(KC_S);
             if (w_pressed && w_suppressed) {
                 register_code(KC_W);
                 w_suppressed = false;
             }
-            return true;
+            return false; // handled manually
         }
     }
 

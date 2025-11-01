@@ -57,9 +57,10 @@ void uart_send_string(const char* str) {
     if (!uart1_initialized) uart_init_and_welcome();
     
     // Send to ESP32 on UART1 (GP8/GP9)
-    while (*str) {
-        uart_putc_raw(ESP_UART_ID, *str);
-        str++;
+    const char* p = str;
+    while (*p) {
+        uart_putc_raw(ESP_UART_ID, *p);
+        p++;
     }
     uart_tx_wait_blocking(ESP_UART_ID);
     
@@ -79,12 +80,12 @@ void uart_debug_print(const char* str) {
     
     const char* p = str;
     int chunk_count = 0;
-    
+
     while (*p) {
         uart_putc_raw(DEBUG_UART_ID, *p);
         p++;
         chunk_count++;
-        
+
         // Every 16 characters, wait for TX FIFO to empty
         if (chunk_count >= 16) {
             uart_tx_wait_blocking(DEBUG_UART_ID);
@@ -92,11 +93,11 @@ void uart_debug_print(const char* str) {
             chunk_count = 0;
         }
     }
-    
+
     // Final wait to ensure everything is sent
     uart_tx_wait_blocking(DEBUG_UART_ID);
     wait_us(1000);  // 1ms final delay
-    
+
     // Also send to HID console (requires CONSOLE_ENABLE = yes in rules.mk)
     #ifdef CONSOLE_ENABLE
     uprintf("%s", str);

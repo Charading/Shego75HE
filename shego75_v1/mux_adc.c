@@ -38,7 +38,8 @@ static uint32_t key_timer[MAX_KEYS];
 
 // Auto-calibration storage
 static uint16_t key_baseline[MAX_KEYS];      // Baseline (resting) ADC value for each key
-static uint16_t key_threshold[MAX_KEYS];     // Dynamic threshold for each key
+static uint16_t key_threshold[MAX_KEYS];     // (legacy) absolute threshold - kept for compatibility
+static uint8_t key_sensitivity_percent[MAX_KEYS]; // Sensitivity percent per key (deviation percent)
 static bool calibration_complete = false;    // Flag indicating calibration status
 
 // Debug counter to limit output
@@ -198,8 +199,12 @@ void calibrate_sensors(void) {
             // Calculate average baseline
             key_baseline[key_idx] = sample_accumulator[key_idx] / sample_count[key_idx];
             
-            // Calculate dynamic threshold as percentage of baseline
-            // CALIBRATION_THRESHOLD_PERCENT is defined in mux_adc.h (e.g., 85 = 85% of baseline)
+            // Initialize sensitivity percent to a default value (deviation percent)
+            // e.g., default 10% -> trigger when value deviates +/-10% from baseline
+            const uint8_t DEFAULT_SENSITIVITY_PERCENT = 10;
+            key_sensitivity_percent[key_idx] = DEFAULT_SENSITIVITY_PERCENT;
+
+            // Keep an absolute fallback threshold (lower bound) for compatibility
             key_threshold[key_idx] = (key_baseline[key_idx] * CALIBRATION_THRESHOLD_PERCENT) / 100;
             
             // Safety clamps: ensure threshold is reasonable
@@ -217,6 +222,25 @@ void calibrate_sensors(void) {
     }
     
     calibration_complete = true;
+}
+
+// Allow external modules to set a per-key sensitivity percent (deviation percent)
+// percent: e.g., 10 => trigger when ADC deviates +/-10% from stored baseline
+void set_key_threshold(uint16_t key_idx, uint8_t percent) {
+    if (key_idx >= MAX_KEYS) return;
+
+    // Clamp percent to sane values (1-90)
+    if (percent < 1) percent = 1;
+    if (percent > 90) percent = 90;
+
+    key_sensitivity_percent[key_idx] = percent;
+
+    // Also update legacy absolute threshold for compatibility (lower bound only)
+    uint16_t base = key_baseline[key_idx] ? key_baseline[key_idx] : 512;
+    uint32_t abs_t = ((uint32_t)base * (uint32_t)(100 - percent)) / 100;
+    if (abs_t < 100) abs_t = 100;
+    if (abs_t > 700) abs_t = 700;
+    key_threshold[key_idx] = (uint16_t)abs_t;
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
@@ -292,9 +316,27 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
                 adc_values[key_idx] = adc_val;
             }
 
-            // Use dynamic per-key threshold if calibration is complete
-            uint16_t threshold = calibration_complete ? key_threshold[key_idx] : SENSOR_THRESHOLD;
-            bool should_press = (adc_val < threshold);
+            // Use dynamic per-key sensitivity if calibration is complete
+            bool should_press = false;
+            if (calibration_complete) {
+                uint16_t base = key_baseline[key_idx] ? key_baseline[key_idx] : 512;
+                uint8_t sens = key_sensitivity_percent[key_idx] ? key_sensitivity_percent[key_idx] : 10; // percent
+
+                // Compute lower and upper bounds based on percent deviation
+                uint32_t lower = ((uint32_t)base * (100 - sens)) / 100;
+                uint32_t upper = ((uint32_t)base * (100 + sens)) / 100;
+
+                // Safety clamps
+                if (lower < 1) lower = 1;
+                if (upper > 4095) upper = 4095;
+
+                // Press if value deviates below lower OR above upper
+                should_press = (adc_val < lower) || (adc_val > upper);
+            } else {
+                // Fallback to legacy absolute threshold
+                uint16_t threshold = key_threshold[key_idx] ? key_threshold[key_idx] : SENSOR_THRESHOLD;
+                should_press = (adc_val < threshold);
+            }
 
             // Debounce: only change state if debounce time elapsed
             if (timer_elapsed32(key_timer[key_idx]) > DEBOUNCE_MS) {

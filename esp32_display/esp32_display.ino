@@ -1010,12 +1010,21 @@ void processCommand(String command) {
       backlightDown();
       Serial.printf("BRIGHTNESS:%d\n", backlightBrightness);
     }
+    else if (command == "I2C_TEST") {
+      // Simulate receiving a simple I2C command to test the system
+      Serial.println("Testing I2C reception by simulating START command...");
+      uint8_t testBuffer[] = {0x10, 0x01, 0x08, 't','e','s','t','.','g','i','f', 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+      // Format: CMD(0x10) | DEST(0x01) | FNAME_LEN(8) | "test.gif" | SIZE(4096) | CRC(0)
+      extern bool processI2CCommand(uint8_t *buffer, uint16_t length);
+      processI2CCommand(testBuffer, 18);
+      Serial.println("I2C test command sent");
+    }
     else if (command == "HELP") {
       Serial.println("Available commands:");
       Serial.println("MENU_OPEN, MENU_CLOSE, MENU_UP, MENU_DOWN, MENU_SELECT");
       Serial.println("SETTINGS_OPEN, TIMER_OPEN");
       Serial.println("TFT_BRIGHTNESS_UP, TFT_BRIGHTNESS_DOWN");
-      Serial.println("STATUS, HELP");
+      Serial.println("STATUS, I2C_TEST, HELP");
     }
     else {
       Serial.println("UNKNOWN_COMMAND - type HELP for available commands");
