@@ -232,13 +232,12 @@ bool rgb_matrix_indicators_user(void) {
             }
     }
 
-    // Apply caps override: LEDs 82..91 -> white when caps lock is on
-    if (caps_override) {
-        for (uint8_t i = 82; i <= 91; ++i) {
-            set_led(i, 0xFF, 0xFF, 0xFF);
-        }
-        // allow other effects to run for other LEDs
-    }
+    // Caps override disabled - ambient strip keeps its current pattern
+    // if (caps_override) {
+    //     for (uint8_t i = 82; i <= 91; ++i) {
+    //         set_led(i, 0xFF, 0xFF, 0xFF);
+    //     }
+    // }
 
     // Pulse animation handling (for single-LED pulse feedback)
     if (pulse_active) {

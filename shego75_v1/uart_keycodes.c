@@ -47,10 +47,10 @@ void toggle_led(void) {
     led_enabled = !led_enabled;
     if (led_enabled) {
         setPinOutput(GP23);      // Drive as output
-        writePinLow(GP23);       // AO3401 P-channel: LOW = ON (Vgs = -5V)
+        writePinHigh(GP23);      // Two-transistor circuit: HIGH = ON (GP23→BSS138→AO3401)
         uart_debug_print("[LED] LED: ON\n");
     } else {
-        writePinHigh(GP23);      // Drive HIGH = OFF (Vgs = -1.7V, slight glow but stable)
+        writePinLow(GP23);       // Two-transistor circuit: LOW = OFF
         uart_debug_print("[LED] LED: OFF\n");
     }
 }

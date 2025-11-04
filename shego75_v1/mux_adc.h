@@ -23,12 +23,13 @@
 #define MUX_WR GP22
 
 // Hall effect threshold - key is pressed when ADC is BELOW this value
-#define SENSOR_THRESHOLD 450
+#define SENSOR_THRESHOLD 480
 
 // Auto-calibration settings
 // Threshold percentage: key press triggers when ADC drops below this % of baseline
 // Example: 85 means key actuates when value drops to 85% of resting state (15% drop)
 // Lower = more sensitive (earlier actuation), Higher = less sensitive (deeper press required)
+// NOTE: This is the legacy fallback. The new system uses DEFAULT_SENSITIVITY_PERCENT in mux_adc.c
 #ifndef CALIBRATION_THRESHOLD_PERCENT
 #define CALIBRATION_THRESHOLD_PERCENT 85
 #endif

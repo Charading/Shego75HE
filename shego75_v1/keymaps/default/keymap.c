@@ -51,7 +51,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LCTL, KC_LGUI, KC_LALT, KC_SPC,   KC_RALT,   MO(1),  KC_RCTL, KC_LEFT, KC_DOWN,  KC_RGHT
     ),
     [1] = SHEGO75HE(
-        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, SOCD_TOG, KC_TRNS,
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, LED_TOG, SOCD_TOG, KC_TRNS,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_PSCR, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_PGUP,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MENU_SELECT, KC_PGDN, 
@@ -77,12 +77,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     
 };
 
-// Encoder map for VIA - actual behavior in encoder_update_user
+// Encoder map for VIA - inverted direction (CCW and CW swapped)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
-    [0] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
-    [1] = { ENCODER_CCW_CW(MENU_DOWN, MENU_UP) },
+    [0] = { ENCODER_CCW_CW(KC_VOLU, KC_VOLD) },  // Inverted: CCW=Vol Up, CW=Vol Down
+    [1] = { ENCODER_CCW_CW(MENU_UP, MENU_DOWN) }, // Inverted: CCW=Menu Up, CW=Menu Down
     [2] = { ENCODER_CCW_CW(KC_TRNS, KC_TRNS) },
-    [3] = { ENCODER_CCW_CW(MENU_DOWN, MENU_UP) }
+    [3] = { ENCODER_CCW_CW(MENU_UP, MENU_DOWN) }  // Inverted: CCW=Menu Up, CW=Menu Down
 };
 
 // Per-layer encoder press map (single encoder).
@@ -110,9 +110,9 @@ void keyboard_post_init_user(void) {
     setPinInput(GP3);  // Hi-Z without pull-up - ESP32 running (not in reset)
 
     // Initialize LED control pin as output, start with LED ON
-    // AO3401 is P-channel MOSFET: LOW = ON, HIGH = OFF
+    // Two-transistor circuit (BSS138 + AO3401): HIGH = ON, LOW = OFF
     setPinOutput(LED_TOG_PIN);
-    writePinLow(LED_TOG_PIN);  // Start with LEDs ON
+    writePinHigh(LED_TOG_PIN);  // Start with LEDs ON
 
     // Initialize UART on GP8/GP9 (uart1) - for ESP32 debug and menu control 
     uart_init_and_welcome();
@@ -138,14 +138,10 @@ void keyboard_post_init_user(void) {
     lighting_init();
 }
 
-// Encoder handling - works alongside encoder_map
+// Encoder handling - let encoder_map handle it
+// Returning true allows the encoder_map to process the rotation
 bool encoder_update_user(uint8_t index, bool clockwise) {
-    if (clockwise) {
-        tap_code(KC_VOLU);
-    } else {
-        tap_code(KC_VOLD);
-    }
-    return false;
+    return true;  // Allow encoder_map to handle rotation
 }
 
 // Encoder switch handling (simple press only).

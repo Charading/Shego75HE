@@ -88,11 +88,14 @@ bool stopwatchRunning = false;
 unsigned long stopwatchStartTime = 0;
 unsigned long stopwatchElapsed = 0;
 
-// Backlight brightness (0-255, PWM duty cycle)
-uint8_t backlightBrightness = 255;  // start at max
+// Backlight brightness (0-3 index for 4 levels)
+// Brightness levels: 0=25%, 1=50%, 2=75%, 3=100%
+uint8_t backlightLevel = 3;  // start at 100% (level 3)
+const uint8_t brightnessLevels[] = {64, 128, 192, 255};  // 4 brightness levels (25%, 50%, 75%, 100%)
 
-// Maximum GIF size allowed (1.5 MB)
-#define MAX_GIF_SIZE_BYTES (1536UL * 1024UL)
+// Maximum GIF size allowed (1.1 MB for TinyPICO Nano)
+// TinyPICO Nano has limited SPIFFS - adjust based on your partition scheme
+#define MAX_GIF_SIZE_BYTES (1126UL * 1024UL)
 
 // Current loaded GIF
 String currentLoadedGif = "";
@@ -278,8 +281,8 @@ void setup()
   // Initialize PWM backlight control (AO3401A transistor on GPIO25)
   // ESP32 Arduino 3.x uses ledcAttach instead of ledcSetup/ledcAttachPin
   ledcAttach(BACKLIGHT_PIN, BACKLIGHT_PWM_FREQ, BACKLIGHT_PWM_RESOLUTION);
-  ledcWrite(BACKLIGHT_PIN, backlightBrightness);  // Start at max brightness
-  Serial.printf("Backlight PWM initialized on GPIO%d at brightness %d\n", BACKLIGHT_PIN, backlightBrightness);
+  setBacklightBrightness(backlightLevel);  // Start at level 3 (100% brightness)
+  Serial.println("Backlight initialized with 4 levels (25%, 50%, 75%, 100%)");
   
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
@@ -318,6 +321,14 @@ void setup()
     return;
   }
   Serial.println("SPIFFS initialized successfully.");
+  
+  // Display SPIFFS capacity info
+  size_t totalBytes = SPIFFS.totalBytes();
+  size_t usedBytes = SPIFFS.usedBytes();
+  size_t freeBytes = totalBytes - usedBytes;
+  Serial.printf("SPIFFS Total: %u bytes (%.2f MB)\n", totalBytes, totalBytes / 1048576.0);
+  Serial.printf("SPIFFS Used: %u bytes (%.2f MB)\n", usedBytes, usedBytes / 1048576.0);
+  Serial.printf("SPIFFS Free: %u bytes (%.2f MB)\n", freeBytes, freeBytes / 1048576.0);
 
   // Scan SD for GIF files (but don't auto-play)
   scanAllGifs();
@@ -383,7 +394,7 @@ void setup()
   } else {
     Serial.println("No existing SPIFFS GIF found, opening menu for selection...");
     currentGifIndex = 0;
-    // Important: Don't set currentGifPath to an SD path as we never want to play from SD
+    // Important: Don't ever want to play from SD
     // Only set placeholders until user makes a selection
     currentLoadedGif = "";
     currentGifPath = "";
@@ -865,11 +876,11 @@ void handleQMKCommands() {
     }
     else if (command == "TFT_BRIGHTNESS_UP") {
       backlightUp();
-      QMKSerial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+      QMKSerial.printf("BRIGHTNESS:%d\n", backlightLevel);
     }
     else if (command == "TFT_BRIGHTNESS_DOWN") {
       backlightDown();
-      QMKSerial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+      QMKSerial.printf("BRIGHTNESS:%d\n", backlightLevel);
     }
     else {
       QMKSerial.println("UNKNOWN_COMMAND");
@@ -1004,11 +1015,11 @@ void processCommand(String command) {
     }
     else if (command == "TFT_BRIGHTNESS_UP") {
       backlightUp();
-      Serial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+      Serial.printf("BRIGHTNESS:%d\n", backlightLevel);
     }
     else if (command == "TFT_BRIGHTNESS_DOWN") {
       backlightDown();
-      Serial.printf("BRIGHTNESS:%d\n", backlightBrightness);
+      Serial.printf("BRIGHTNESS:%d\n", backlightLevel);
     }
     else if (command == "I2C_TEST") {
       // Simulate receiving a simple I2C command to test the system
@@ -1789,34 +1800,84 @@ bool copyFile(const char *srcPath, const char *dstPath) {
   tft.endWrite();
   if (spiMutex) xSemaphoreGive(spiMutex);
 
+  Serial.printf("Attempting to open SD file: %s\n", srcPath);
   File srcFile = SD.open(srcPath);
   if (!srcFile) {
-    Serial.println("Failed to open source file for reading");
+    Serial.println("ERROR: Failed to open source file for reading - SD card read failure!");
+    Serial.println("Check: 1) SD card inserted, 2) wiring, 3) file exists");
+    tft.fillScreen(TFT_RED);
+    tft.setCursor(10, 50);
+    tft.setTextColor(TFT_WHITE);
+    tft.print("SD Read Failed!");
+    tft.setCursor(10, 65);
+    tft.print("Check wiring/card");
+    delay(3000);
     return false;
   }
+  Serial.printf("SD file opened successfully, checking size...\n");
 
   // Check the file size before copying
   size_t fileSize = srcFile.size();
+  Serial.printf("File size: %u bytes (%.2f KB)\n", fileSize, fileSize / 1024.0);
   if (fileSize > MAX_GIF_SIZE_BYTES) {
     Serial.printf("Source GIF too large (%u bytes) - max allowed is %u bytes\n", (unsigned)fileSize, (unsigned)MAX_GIF_SIZE_BYTES);
     srcFile.close();
     return false;
   }
-  File dstFile = SPIFFS.open(dstPath, FILE_WRITE);
-  if (!dstFile) {
-    Serial.println("Failed to open destination file for writing");
+  // Check SPIFFS free space before attempting copy
+  size_t totalBytes = SPIFFS.totalBytes();
+  size_t usedBytes = SPIFFS.usedBytes();
+  size_t freeBytes = totalBytes - usedBytes;
+  Serial.printf("SPIFFS: %u total, %u used, %u free\n", totalBytes, usedBytes, freeBytes);
+  
+  if (fileSize > freeBytes) {
+    Serial.printf("Not enough SPIFFS space! Need %u bytes, only %u free\n", fileSize, freeBytes);
+    tft.fillScreen(TFT_RED);
+    tft.setCursor(10, 50);
+    tft.setTextColor(TFT_WHITE);
+    tft.print("Not enough space!");
+    tft.setCursor(10, 65);
+    tft.printf("Need: %uKB", fileSize / 1024);
+    tft.setCursor(10, 80);
+    tft.printf("Free: %uKB", freeBytes / 1024);
+    delay(3000);
     srcFile.close();
     return false;
   }
+  
+  Serial.printf("Opening SPIFFS file for writing: %s\n", dstPath);
+  File dstFile = SPIFFS.open(dstPath, FILE_WRITE);
+  if (!dstFile) {
+    Serial.println("ERROR: Failed to open destination file for writing - SPIFFS write failure!");
+    tft.fillScreen(TFT_RED);
+    tft.setCursor(10, 50);
+    tft.setTextColor(TFT_WHITE);
+    tft.print("SPIFFS Write Failed!");
+    delay(3000);
+    srcFile.close();
+    return false;
+  }
+  Serial.println("SPIFFS file opened, starting copy...");
+  
   size_t bufferSize = 512;
   uint8_t buffer[bufferSize];
   size_t bytesCopied = 0;
 
   while (srcFile.available()) {
     int bytesRead = srcFile.read(buffer, bufferSize);
-    if (bytesRead > 0) {
-      dstFile.write(buffer, bytesRead);
-      bytesCopied += bytesRead;
+    if (bytesRead <= 0) {
+      Serial.printf("ERROR: SD read failed at byte %u\n", bytesCopied);
+      break;
+    }
+    
+    int bytesWritten = dstFile.write(buffer, bytesRead);
+    if (bytesWritten != bytesRead) {
+      Serial.printf("ERROR: SPIFFS write failed at byte %u (wrote %d of %d bytes)\n", bytesCopied, bytesWritten, bytesRead);
+      srcFile.close();
+      dstFile.close();
+      return false;
+    }
+    bytesCopied += bytesRead;
 
       // Update progress bar, clamp to barW
       int progress = (int)(((float)bytesCopied / fileSize) * 100);
@@ -2095,24 +2156,25 @@ void drawDebugPopup() {
 // BACKLIGHT CONTROL (PWM via AO3401A transistor)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-void setBacklightBrightness(uint8_t brightness) {
-  backlightBrightness = brightness;
-  ledcWrite(BACKLIGHT_PIN, backlightBrightness);
-  Serial.printf("Backlight brightness set to %d\n", backlightBrightness);
+void setBacklightBrightness(uint8_t level) {
+  if (level > 3) level = 3;  // clamp to valid range
+  backlightLevel = level;
+  uint8_t pwmValue = brightnessLevels[backlightLevel];
+  // Invert for P-channel MOSFET (AO3401A): 255=full brightness, 0=off
+  ledcWrite(BACKLIGHT_PIN, 255 - pwmValue);
+  Serial.printf("Backlight level %d -> %d%% (PWM: %d)\n", backlightLevel, (backlightLevel + 1) * 25, 255 - pwmValue);
 }
 
 void backlightUp() {
-  if (backlightBrightness < 255) {
-    backlightBrightness = min(255, backlightBrightness + 25);
-    ledcWrite(BACKLIGHT_PIN, backlightBrightness);
-    Serial.printf("Backlight UP -> %d\n", backlightBrightness);
+  if (backlightLevel < 3) {
+    backlightLevel++;
+    setBacklightBrightness(backlightLevel);
   }
 }
 
 void backlightDown() {
-  if (backlightBrightness > 0) {
-    backlightBrightness = max(0, backlightBrightness - 25);
-    ledcWrite(BACKLIGHT_PIN, backlightBrightness);
-    Serial.printf("Backlight DOWN -> %d\n", backlightBrightness);
+  if (backlightLevel > 0) {
+    backlightLevel--;
+    setBacklightBrightness(backlightLevel);
   }
 }

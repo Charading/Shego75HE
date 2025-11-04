@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DEBOUNCE_MS 5
+#define DEBOUNCE_MS 2  // Reduced from 5ms to 2ms for faster response
 
 // ESP_RESET_PIN definition (GP3 - bootloader trigger pin, must be HIGH during boot)
 #ifndef ESP_RESET_PIN
@@ -200,8 +200,10 @@ void calibrate_sensors(void) {
             key_baseline[key_idx] = sample_accumulator[key_idx] / sample_count[key_idx];
             
             // Initialize sensitivity percent to a default value (deviation percent)
-            // e.g., default 10% -> trigger when value deviates +/-10% from baseline
-            const uint8_t DEFAULT_SENSITIVITY_PERCENT = 10;
+            // e.g., default 4% -> trigger when value deviates +/-4% from baseline
+            // Lower = more sensitive, Higher = less sensitive (requires harder press)
+            // 4% is a good balance: responsive without noise/crosstalk false triggers
+            const uint8_t DEFAULT_SENSITIVITY_PERCENT = 4;
             key_sensitivity_percent[key_idx] = DEFAULT_SENSITIVITY_PERCENT;
 
             // Keep an absolute fallback threshold (lower bound) for compatibility
@@ -246,6 +248,13 @@ void set_key_threshold(uint16_t key_idx, uint8_t percent) {
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     bool changed = false;
     uint32_t now = timer_read32();
+
+    // Throttle matrix scan to ~667Hz (1.5ms between scans) - faster for better response
+    static uint32_t last_scan = 0;
+    if (timer_elapsed32(last_scan) < 2) {  // QMK timer is 1ms resolution, so use 2ms
+        return false;
+    }
+    last_scan = now;
 
     // Clear matrix output
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
