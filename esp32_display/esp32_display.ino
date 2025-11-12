@@ -93,9 +93,9 @@ unsigned long stopwatchElapsed = 0;
 uint8_t backlightLevel = 3;  // start at 100% (level 3)
 const uint8_t brightnessLevels[] = {64, 128, 192, 255};  // 4 brightness levels (25%, 50%, 75%, 100%)
 
-// Maximum GIF size allowed (1.1 MB for TinyPICO Nano)
-// TinyPICO Nano has limited SPIFFS - adjust based on your partition scheme
-#define MAX_GIF_SIZE_BYTES (1126UL * 1024UL)
+// Maximum GIF size allowed (2 MB)
+// Adjust this if your SPIFFS/partition scheme can't hold this size.
+#define MAX_GIF_SIZE_BYTES (2UL * 1024UL * 1024UL)
 
 // Current loaded GIF
 String currentLoadedGif = "";
@@ -416,7 +416,8 @@ void setup()
   }
 
   // Initialize I2C GIF receiver (SDA=GPIO13, SCL=GPIO14)
-  i2cInit();
+  // Use renamed init function to avoid conflict with esp32-hal i2cInit()
+  i2cInitSlave();
 
   tft.fillScreen(TFT_BLACK);
   
@@ -431,7 +432,7 @@ void loop()
   handleButtons();
   handleQMKCommands();
   handleSerialCommands();  // Handle commands from Serial Monitor
-  i2cLoop();  // Process I2C GIF transfers
+  i2cProcess();  // Process I2C GIF transfers (renamed)
   
   // Update timer if running
   if (timerRunning) {
@@ -1896,9 +1897,6 @@ bool copyFile(const char *srcPath, const char *dstPath) {
       if (spiMutex) xSemaphoreGive(spiMutex);
 
       yield(); // Allow other tasks to run
-    } else {
-      break;
-    }
   }
 
   srcFile.close();

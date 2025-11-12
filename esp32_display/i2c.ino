@@ -55,7 +55,7 @@ void abortI2CTransfer();
 uint32_t computeFileCRC32(const char* filepath, bool useSD);
 
 // Initialize I2C slave
-void i2cInit() {
+void i2cInitSlave() {
   // Reset transfer state
   i2cTransfer.state = IDLE;
   i2cTransfer.active = false;
@@ -97,7 +97,7 @@ void i2cRequestHandler() {
 }
 
 // Process incoming I2C data (call from main loop)
-void i2cLoop() {
+void i2cProcess() {
   if (i2cDataReady) {
     i2cDataReady = false;
     processI2CCommand(i2cRxBuffer, i2cRxIndex);
