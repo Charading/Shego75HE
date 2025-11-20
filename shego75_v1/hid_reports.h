@@ -13,6 +13,9 @@
 #define HID_REPORT_ID_STATUS       0x13  // Status responses
 // New: set per-key threshold
 #define HID_REPORT_ID_SET_THRESHOLD 0x20
+// Custom: trigger LED_TOG keycode from host
+// Historically this used 0x30; accept 0x54 ('T') as the primary command now.
+#define HID_REPORT_ID_LED_TOGGLE    0x54
 
 // Destination flags (matches your config.js)
 #define DEST_SCREEN    0x01  // Display on screen
@@ -35,3 +38,6 @@ void hid_process_received_buffer(uint8_t *buf, uint8_t length);
 #define STATUS_CHUNK_RECEIVED      0x03
 #define STATUS_TRANSFER_COMPLETE   0x04
 #define STATUS_ERROR_INVALID       0x05
+
+// Some host utilities prepend a magic prefix byte before the actual command
+#define HID_PREFIX_APP_MAGIC        0xA5

@@ -109,10 +109,8 @@ void keyboard_post_init_user(void) {
     // Start with ESP32 running: GP3 Hi-Z (no pull-up) = MOSFET off = ESP_EN high
     setPinInput(GP3);  // Hi-Z without pull-up - ESP32 running (not in reset)
 
-    // Initialize LED control pin as output, start with LED ON
-    // Two-transistor circuit (BSS138 + AO3401): HIGH = ON, LOW = OFF
-    setPinOutput(LED_TOG_PIN);
-    writePinHigh(LED_TOG_PIN);  // Start with LEDs ON
+    // Initialize LED control pin via shared helper so polarity stays consistent
+    led_set_state(true);
 
     // Initialize UART on GP8/GP9 (uart1) - for ESP32 debug and menu control 
     uart_init_and_welcome();

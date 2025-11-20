@@ -190,6 +190,74 @@ header h1 {
 .status-message.info {
   background: #e3f2fd;
   color: #1976d2;
+.settings-console {
+  margin-top: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(233, 69, 96, 0.25);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.console-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  color: #c3cbe3;
+  border-bottom: 1px solid rgba(233, 69, 96, 0.35);
+  padding-bottom: 8px;
+}
+.log {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(233, 69, 96, 0.2);
+  border-radius: 6px;
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #00ff88;
+}
+.console-log::-webkit-scrollbar {
+  width: 8px;
+}
+.console-log::-webkit-scrollbar-thumb {
+  background: rgba(233, 69, 96, 0.5);
+  border-radius: 4px;
+}
+.log-entry {
+  margin-bottom: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+}
+.log-time {
+  color: #a8b2d1;
+  margin-right: 8px;
+}
+.log-error {
+  color: #ff6b6b;
+}
+.log-success {
+  color: #51cf66;
+}
+.console-entry.console-error {
+  color: #ff6b6b;
+}
+.console-entry.console-success {
+  color: #51cf66;
+}
+.console-entry.console-data {
+  color: #66c2ff;
+}
+.console-entry.console-info {
+  color: #00ff88;
+}
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
 }
 
 .status-message.success {

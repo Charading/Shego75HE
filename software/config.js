@@ -13,6 +13,8 @@ module.exports = {
     HID_REPORT_ID_STATUS: 0x13, // Report ID for firmware status updates
     // Set per-key actuation threshold (row, col, percent)
     CMD_SET_THRESHOLD: 0x20,
+    // Custom: firmware toggles LED transistor/boolean
+    CMD_LED_TOGGLE: 0x30,
 
     // Status Codes from Firmware
     STATUS_OK: 0x01,

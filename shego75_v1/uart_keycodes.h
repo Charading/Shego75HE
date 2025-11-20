@@ -45,4 +45,9 @@ bool get_raw_debug_enabled(void);
 
 // LED control functions
 void toggle_led(void);
+void led_set_state(bool on);
 bool get_led_enabled(void);
+uint8_t get_led_pin_level(void);
+uint8_t get_led_pin_number(void);
+bool led_pin_active_high(void);
+void toggle_onboard_led(bool on);

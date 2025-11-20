@@ -15,6 +15,7 @@
     <div class="tabs">
       <button class="tab-button active" data-tab="gif">GIF Upload</button>
       <button class="tab-button" data-tab="keyboard">Actuation Settings</button>
+      <button class="tab-button" data-tab="settings">Settings</button>
     </div>
 
     <!-- GIF Upload Tab -->
@@ -63,6 +64,38 @@
               <button id="apply-threshold" class="btn btn-primary">Apply</button>
               <button id="cancel-edit" class="btn btn-secondary">Cancel</button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settings-tab" class="tab-content">
+      <div class="settings-grid">
+        <div class="settings-left">
+          <h2>Device Controls</h2>
+          <div class="card">
+            <label for="vid-input">Vendor ID</label>
+            <input id="vid-input" type="text" value="DEAD" />
+            <label for="pid-input">Product ID</label>
+            <input id="pid-input" type="text" value="C0DE" />
+
+            <div class="controls-row">
+              <button id="toggle-led" class="btn btn-primary btn-block">Toggle LEDs</button>
+            </div>
+
+            <div id="settings-status" class="status-message" aria-live="polite"></div>
+            <p class="muted">Sends RawHID 0x30 to the keyboard. Use the console to view responses.</p>
+          </div>
+        </div>
+
+        <div class="settings-right">
+          <h2>Device Console</h2>
+          <div class="card">
+            <div class="console-toolbar">
+              <button id="clear-settings-console" class="btn btn-secondary btn-small">Clear</button>
+            </div>
+            <div id="settings-console-log" class="log"></div>
           </div>
         </div>
       </div>

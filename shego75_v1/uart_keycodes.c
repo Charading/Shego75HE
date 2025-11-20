@@ -2,6 +2,8 @@
 #include "socd.h"
 #include "uart.h"
 #include "wait.h"
+#include "lighting.h"
+#include <stdio.h>
 
 // Pin used to reset external ESP device (active low pulse)
 #ifndef ESP_RESET_PIN
@@ -12,7 +14,7 @@
 static bool adc_debug_enabled = false;   // Start disabled (no UART debug output)
 static bool key_debug_enabled = false;   // Start disabled
 static bool raw_debug_enabled = false;    // Start disabled
-static bool led_enabled = true;          // Start with LED on (AO3401 P-channel: LOW = ON)
+static bool led_enabled = true;          // Logical LED state
 // SOCD lives in socd.c
 
 // Toggle functions
@@ -43,16 +45,37 @@ void toggle_raw_debug(void) {
     }
 }
 
+static void drive_led_pin(bool on) {
+#ifdef LED_TOG_PIN
+    setPinOutput(LED_TOG_PIN);
+    bool level = LED_TOG_ACTIVE_HIGH ? on : !on;
+    writePin(LED_TOG_PIN, level ? 1 : 0);
+    char buf[80];
+    snprintf(buf, sizeof(buf), "[LED] logical=%s level=%s (pin %d)\n", on ? "ON" : "OFF", level ? "HIGH" : "LOW", LED_TOG_PIN);
+    uart_debug_print(buf);
+#else
+    (void)on;
+#endif
+}
+
+void led_set_state(bool on) {
+    led_enabled = on;
+    drive_led_pin(led_enabled);
+}
+
 void toggle_led(void) {
     led_enabled = !led_enabled;
-    if (led_enabled) {
-        setPinOutput(GP23);      // Drive as output
-        writePinHigh(GP23);      // Two-transistor circuit: HIGH = ON (GP23→BSS138→AO3401)
-        uart_debug_print("[LED] LED: ON\n");
-    } else {
-        writePinLow(GP23);       // Two-transistor circuit: LOW = OFF
-        uart_debug_print("[LED] LED: OFF\n");
-    }
+    drive_led_pin(led_enabled);
+}
+
+// Small helper: toggle onboard Pico LED (GP25) for a visible ACK
+void toggle_onboard_led(bool on) {
+    // Some QMK/boards may not define GP25; ensure macro exists
+#ifdef GP25
+    setPinOutput(GP25);
+    if (on) writePinHigh(GP25);
+    else writePinLow(GP25);
+#endif
 }
 
 // Getters for debug state
@@ -70,6 +93,30 @@ bool get_raw_debug_enabled(void) {
 
 bool get_led_enabled(void) {
     return led_enabled;
+}
+
+uint8_t get_led_pin_level(void) {
+#ifdef LED_TOG_PIN
+    return readPin(LED_TOG_PIN) ? 1 : 0;
+#else
+    return 0;
+#endif
+}
+
+uint8_t get_led_pin_number(void) {
+#ifdef LED_TOG_PIN
+    return LED_TOG_PIN;
+#else
+    return 0xFF;
+#endif
+}
+
+bool led_pin_active_high(void) {
+#ifdef LED_TOG_ACTIVE_HIGH
+    return LED_TOG_ACTIVE_HIGH;
+#else
+    return true;
+#endif
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {

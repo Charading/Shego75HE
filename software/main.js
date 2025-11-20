@@ -1,7 +1,13 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 const config = require('./config');
+
+const execFileAsync = promisify(execFile);
+const PYTHON_EXE = process.env.PYTHON || 'python';
+const PY_RGB_TOGGLE = path.join(__dirname, 'py_settings', 'rgb_toggle.py');
 
 // Enable hot reload in development
 try {
@@ -20,6 +26,20 @@ try {
   HID = require('node-hid');
 } catch (err) {
   console.log('node-hid not available, HID features will be disabled');
+}
+
+// Optional: enumerate HID devices for debugging interface selection
+if (HID && process.env.HID_ENUM) {
+  try {
+    const devs = HID.devices();
+    console.log('----- HID Device Enumeration -----');
+    devs.forEach(d => {
+      console.log(`[IF:${d.interface||0}] VID=0x${(d.vendorId||0).toString(16).padStart(4,'0')} PID=0x${(d.productId||0).toString(16).padStart(4,'0')} usagePage=${d.usagePage||''} usage=${d.usage||''} path=${d.path}`);
+    });
+    console.log('----------------------------------');
+  } catch (e) {
+    console.log('Failed to enumerate HID devices:', e.message);
+  }
 }
 
 // Try to load usb (for vendor bulk endpoints)
@@ -240,128 +260,86 @@ function closeVendorDevice() {
 
 function setupHidListener(hidDevice, webContents) {
   hidDevice.on('data', (data) => {
-    const rawArr = Array.from(data);
-    
-    // Normalize: strip leading 0x00 if present
-    let normArr = rawArr;
-    if (rawArr.length > 0 && rawArr[0] === 0x00) {
-      normArr = rawArr.slice(1);
-    }
+    let normArr = Array.from(data);
+    // Strip Windows leading report ID 0x00
+    if (normArr.length > 0 && normArr[0] === 0x00) normArr = normArr.slice(1);
 
     if (normArr.length === 0) return;
 
-    // Get signature (first 8 bytes)
+    // Echo suppression signature BEFORE prefix strip (to match what we sent)
     const receivedSig = normArr.slice(0, 8);
     const now = Date.now();
-
-    // Check if this is an echo by comparing signatures
     let isEcho = false;
     for (let i = sentPacketHistory.length - 1; i >= 0; i--) {
       const entry = sentPacketHistory[i];
-      
-      // Only check recent sends
       if (now - entry.ts > ECHO_WINDOW_MS) continue;
-      
-      // Compare first 8 bytes
       let matches = true;
       for (let j = 0; j < Math.min(8, receivedSig.length, entry.signature.length); j++) {
-        if (receivedSig[j] !== entry.signature[j]) {
-          matches = false;
-          break;
-        }
+        if (receivedSig[j] !== entry.signature[j]) { matches = false; break; }
       }
-      
       if (matches) {
         isEcho = true;
-        // Remove from history to avoid matching again
         sentPacketHistory.splice(i, 1);
-        if (HID_DEBUG) {
-          console.log('[DEBUG] Suppressed echo after', now - entry.ts, 'ms');
-        }
+        if (HID_DEBUG) console.log('[DEBUG] Suppressed echo after', now - entry.ts, 'ms');
         break;
       }
     }
+    if (isEcho) return;
 
-    // If it's an echo, suppress it
-    if (isEcho) {
-      return;
+    // Strip optional 0xFF prefix inserted by intermediary hosts
+    if (normArr.length > 1 && normArr[0] === 0xFF) {
+      if (HID_DEBUG) console.log('[DEBUG] Raw HID inbound prefix 0xFF stripped');
+      normArr = normArr.slice(1);
     }
 
-    // Not an echo - this is a real message from firmware
     const cmdByte = normArr[0];
-    
-    // Check if it's a status message
+
     if (cmdByte === config.HID_REPORT_ID_STATUS) {
       const statusCode = normArr.length > 1 ? normArr[1] : 0;
       let statusMsg = 'Unknown';
-      
       if (statusCode === config.STATUS_OK) statusMsg = 'OK';
       else if (statusCode === config.STATUS_CHUNK_RECEIVED) statusMsg = 'Chunk received';
       else if (statusCode === config.STATUS_TRANSFER_STARTED) statusMsg = 'Transfer started';
       else if (statusCode === config.STATUS_TRANSFER_COMPLETE) statusMsg = 'Transfer complete';
       else if (statusCode === config.STATUS_ERROR_INVALID) statusMsg = 'Error: Invalid';
-      
       console.log(`✅ Status from keyboard: ${statusMsg} (0x${statusCode.toString(16)})`);
       webContents.send('hid-status', { code: statusCode, message: statusMsg });
       return;
     }
 
-    // Some other message - log it
-    console.log(`📨 Message from keyboard (cmd: 0x${cmdByte.toString(16)}):`, 
+    console.log(`📨 Message from keyboard (cmd: 0x${cmdByte.toString(16)}):`,
       normArr.slice(0, 16).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '),
       normArr.length > 16 ? '...' : ''
     );
-    
     webContents.send('hid-data', Buffer.from(normArr));
   });
-  
-  hidDevice.on('error', (err) => {
-    console.error('❌ HID device error:', err);
-  });
-}
 
+  hidDevice.on('error', (err) => console.error('❌ HID device error:', err));
+}
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      contextIsolation: true
     }
   });
 
-  mainWindow.loadFile('index.html');
-  
-  // Open DevTools in development
-  if (process.argv.includes('--dev')) {
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+  if (process.env.OPEN_DEVTOOLS) {
     mainWindow.webContents.openDevTools();
   }
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-// Handle file selection
+// Select GIF file dialog
 ipcMain.handle('select-gif', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
+  const result = await dialog.showOpenDialog({
+    title: 'Select GIF',
     properties: ['openFile'],
-    filters: [
-      { name: 'GIF Images', extensions: ['gif'] }
-    ]
+    filters: [ { name: 'GIF Images', extensions: ['gif'] } ]
   });
 
   if (!result.canceled && result.filePaths.length > 0) {
@@ -375,6 +353,26 @@ ipcMain.handle('select-gif', async () => {
     };
   }
   return null;
+});
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  // Close HID / USB resources to ensure process can exit cleanly
+  try { if (hidDevice) { try { hidDevice.close(); } catch (_) {} hidDevice = null; } } catch (_) {}
+  try { closeVendorDevice(); } catch (_) {}
+  if (process.platform !== 'darwin') app.quit();
+});
+
+// Ensure cleanup on quit (in case other resources remain open)
+app.on('before-quit', () => {
+  try { if (hidDevice) { try { hidDevice.close(); } catch (_) {} hidDevice = null; } } catch (_) {}
+  try { closeVendorDevice(); } catch (_) {}
 });
 
 // Handle sending GIF to different destinations
@@ -580,5 +578,21 @@ ipcMain.handle('update-actuation', async (event, { keyId, threshold }) => {
   } catch (error) {
     console.error('❌ Failed to update actuation:', error);
     return { success: false, message: error.message };
+  }
+});
+
+// Handle simple LED toggle via Python helper (py_settings/rgb_toggle.py)
+ipcMain.handle('toggle-led', async () => {
+  try {
+    const args = [PY_RGB_TOGGLE, '--cmd', config.CMD_LED_TOGGLE.toString(16).padStart(2, '0')];
+    const { stdout, stderr } = await execFileAsync(PYTHON_EXE, args, { cwd: __dirname });
+    if (stderr && stderr.trim()) {
+      console.warn('[py_settings] rgb_toggle stderr:', stderr.trim());
+    }
+    return { success: true, stdout: stdout.trim(), stderr: stderr.trim() };
+  } catch (error) {
+    const errMsg = error.stderr ? error.stderr.toString() : error.message;
+    console.error('rgb_toggle failed:', errMsg);
+    return { success: false, message: errMsg };
   }
 });

@@ -188,3 +188,81 @@ cancelEditBtn.addEventListener('click', () => {
 
 // Initialize keyboard on load
 generateKeyboard();
+
+// Settings tab handlers
+const toggleLedBtn = document.getElementById('toggle-led');
+const settingsStatus = document.getElementById('settings-status');
+const settingsConsole = document.getElementById('settings-console-log');
+const clearConsoleBtn = document.getElementById('clear-settings-console');
+const MAX_CONSOLE_ENTRIES = 120;
+
+function appendConsoleLine(message, type = 'info') {
+  if (!settingsConsole) return;
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  if (type === 'error') entry.classList.add('log-error');
+  else if (type === 'success') entry.classList.add('log-success');
+  // timestamp span matches activity log markup
+  const ts = document.createElement('span');
+  ts.className = 'log-time';
+  ts.textContent = `[${new Date().toLocaleTimeString()}] `;
+  entry.appendChild(ts);
+  const text = document.createElement('span');
+  text.textContent = message;
+  entry.appendChild(text);
+  settingsConsole.insertBefore(entry, settingsConsole.firstChild);
+
+  while (settingsConsole.children.length > MAX_CONSOLE_ENTRIES) {
+    settingsConsole.removeChild(settingsConsole.lastChild);
+  }
+}
+
+if (clearConsoleBtn) {
+  clearConsoleBtn.addEventListener('click', () => {
+    settingsConsole.innerHTML = '';
+  });
+}
+
+function formatHexPreview(data, limit = 16) {
+  if (!data) return '';
+  const arr = Array.from(data);
+  const preview = arr.slice(0, limit).map(b => b.toString(16).padStart(2, '0')).join(' ');
+  const suffix = arr.length > limit ? ' ...' : '';
+  return `${preview}${suffix}`;
+}
+
+if (toggleLedBtn) {
+  toggleLedBtn.addEventListener('click', async () => {
+    settingsStatus.textContent = 'Sending LED toggle...';
+    settingsStatus.className = 'status-message info';
+    const result = await window.electronAPI.toggleLed();
+    if (result && result.success) {
+      const extra = result.stdout ? ` (${result.stdout})` : '';
+      settingsStatus.textContent = `LED toggled${extra}`;
+      settingsStatus.className = 'status-message success';
+      if (result.stdout) {
+        appendConsoleLine(result.stdout, 'success');
+      } else {
+        appendConsoleLine('LED toggle command sent.', 'success');
+      }
+    } else {
+      const msg = result && result.message ? result.message : 'Unknown error';
+      settingsStatus.textContent = `Failed: ${msg}`;
+      settingsStatus.className = 'status-message error';
+      appendConsoleLine(`Toggle failed: ${msg}`, 'error');
+    }
+  });
+}
+
+if (window.electronAPI && window.electronAPI.onHidStatus) {
+  window.electronAPI.onHidStatus((payload) => {
+    if (!payload) return;
+    appendConsoleLine(`Status ${payload.code}: ${payload.message}`, payload.code === 0 ? 'success' : 'info');
+  });
+}
+
+if (window.electronAPI && window.electronAPI.onHidData) {
+  window.electronAPI.onHidData((buffer) => {
+    appendConsoleLine(`HID data: ${formatHexPreview(buffer)}`, 'data');
+  });
+}

@@ -48,6 +48,17 @@
 
 #define VENDOR_ENABLE
 
+// LED rail control polarity. Set to 1 if driving the pin HIGH turns LEDs ON,
+// or 0 if the hardware expects LOW for ON (for example, a direct P-channel gate).
+#ifndef LED_TOG_ACTIVE_HIGH
+#    define LED_TOG_ACTIVE_HIGH 1
+#endif
+
+// Define the LED toggle pin (GP23) so uart_keycodes.c can drive it
+#ifndef LED_TOG_PIN
+#   define LED_TOG_PIN GP23
+#endif
+
 // UART configuration - Dual UART setup
 // UART0 (GP0/GP1): Debug output
 // UART1 (GP8/GP9): ESP32 communication
