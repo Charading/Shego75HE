@@ -1,0 +1,46 @@
+[
+  {
+    "vendorId": 65253,
+    "productId": 24576,
+    "path": "\\\\?\\HID#VID_FEE5&PID_6000&MI_02&Col01#a&2cf4388c&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+    "serialNumber": "DE6140C58B602E2B0000000000000000",
+    "manufacturer": "Charading",
+    "product": "adc_matrix_test",
+    "interface": 2,
+    "usagePage": 1,
+    "usage": 2
+  },
+  {
+    "vendorId": 65253,
+    "productId": 24576,
+    "path": "\\\\?\\HID#VID_FEE5&PID_6000&MI_03#a&19c41c4e&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+    "serialNumber": "DE6140C58B602E2B0000000000000000",
+    "manufacturer": "Charading",
+    "product": "adc_matrix_test",
+    "interface": 3,
+    "usagePage": 65329,
+    "usage": 116
+  },
+  {
+    "vendorId": 57005,
+    "productId": 49374,
+    "path": "\\\\?\\HID#VID_DEAD&PID_C0DE&MI_02&Col01#a&364ee64d&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+    "serialNumber": "E46824750B1046230000000000000000",
+    "manufacturer": "Charading",
+    "product": "SHEGO75HE",
+    "interface": 2,
+    "usagePage": 1,
+    "usage": 2
+  },
+  {
+    "vendorId": 57005,
+    "productId": 49374,
+    "path": "\\\\?\\HID#VID_DEAD&PID_C0DE&MI_03#a&1277a88b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+    "serialNumber": "E46824750B1046230000000000000000",
+    "manufacturer": "Charading",
+    "product": "SHEGO75HE",
+    "interface": 3,
+    "usagePage": 65329,
+    "usage": 116
+  }
+]

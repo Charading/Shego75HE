@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPIO Toggle - HID Controller</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Shego LED Toggle</h1>
+      <p class="subtitle">Send LED_TOG (0x30) via Raw HID</p>
+    </header>
+
+    <main>
+      <section class="device-section">
+        <h2>Device Configuration</h2>
+        <div class="input-group">
+          <label for="vendorId">Vendor ID (hex):</label>
+          <input type="text" id="vendorId" value="DEAD" placeholder="DEAD">
+        </div>
+        <div class="input-group">
+          <label for="productId">Product ID (hex):</label>
+          <input type="text" id="productId" value="C0DE" placeholder="C0DE">
+        </div>
+      </section>
+
+      <section class="control-section">
+        <h2>Lighting Control</h2>
+        <div class="button-group">
+          <button id="toggleGpio" class="btn btn-primary">Toggle LEDs (LED_TOG)</button>
+          <button id="listDevices" class="btn btn-secondary">List HID Devices</button>
+        </div>
+      </section>
+
+      <section class="console-section">
+        <h2>Firmware Console</h2>
+        <div class="button-group" style="margin-bottom: 10px;">
+          <button id="startConsole" class="btn btn-secondary">Start Console</button>
+          <button id="stopConsole" class="btn btn-secondary">Stop Console</button>
+          <button id="clearConsole" class="btn btn-secondary">Clear</button>
+        </div>
+        <div id="consoleOutput" class="log" style="height: 200px; background: #000; color: #0f0;"></div>
+      </section>
+
+      <section class="log-section">
+        <h2>Activity Log</h2>
+        <div id="log" class="log"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
