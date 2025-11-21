@@ -47,7 +47,7 @@ SPIClass sdSPI(VSPI);
 SemaphoreHandle_t spiMutex = NULL;
 
 // Array to store GIF filenames (for browsing only)
-String gifFiles[20];
+String gifFiles[100];
 int gifCount = 0;
 int currentGifIndex = 0;
 
@@ -1714,7 +1714,7 @@ void scanAllGifs() {
       if (fsize > MAX_GIF_SIZE_BYTES) {
         Serial.printf("Skipping large GIF (>%u bytes): %s\n", (unsigned)MAX_GIF_SIZE_BYTES, fileName.c_str());
       } else {
-        if (gifCount < 20) { // Prevent array overflow
+        if (gifCount < 100) { // Prevent array overflow
           gifFiles[gifCount] = fileName; // Store just the filename, not full path
           Serial.printf("Found GIF: %s (%u bytes)\n", fileName.c_str(), (unsigned)fsize);
           gifCount++;
