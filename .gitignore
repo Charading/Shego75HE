@@ -1,0 +1,56 @@
+# ========================================
+# General
+# ========================================
+*.bak
+*.tmp
+*.autosave
+*.log
+*.DS_Store
+Thumbs.db
+
+# ========================================
+# VSCode
+# ========================================
+.vscode/
+
+
+# ========================================
+# Node.js dependencies
+# ========================================
+node_modules/
+**/node_modules/
+
+# ========================================
+# KiCad files
+# ========================================
+# Backups and autosaves
+*_autosave-*.kicad_sch
+*_autosave-*.kicad_pcb
+*-backups/
+*__backups/
+*_backups/
+
+# KiCad temporary and cache files
+*.kicad_prl
+fp-info-cache
+fabrication-toolkit-options.json
+production/
+
+# ========================================
+# Build or object folders
+# ========================================
+build/
+obj/
+dist/
+out/
+
+# ========================================
+# Specific folders
+# ========================================
+testing/
+case/bambu_studio/
+assets/advertising/
+# ========================================
+# Python / JSON cache (if used)
+# ========================================
+
