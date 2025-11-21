@@ -8,14 +8,14 @@
 ### Introduction&nbsp; <img src="./assets/shego.gif" height="32" style="vertical-align: -7px;">
 
 
-I couldn't find a keyboard with the all of features that I wanted at all, so I resorted to building my own one. After testing a lot of keyboards, I wanted one that had a mix of all different features from multiple keyboards. This project has taken many, many, many months, starting from experimentaion and various mini protypes like the [Shego16](https://github.com/Charading/SHEGO16-QMK-Hall-Effect-Macropad)
+I couldn't find a keyboard with the all of features that I wanted at all, so I resorted to building my own one. After testing a lot of keyboards, I wanted one that had a mix of all different features from multiple keyboards. This project has taken many, many, many months, starting from experimentaion and various mini protypes like the [Shego16](https://github.com/Charading/SHEGO16-QMK-Hall-Effect-Macropad).
 
 ### Design and Inspiration 💡
 I think the exploded 75% layout is one of the best layouts but sadly it's not as aftermarket as the generic 60% layout so my only options for trying to find a board were scarce. For aesthetics, I went with Shego because my mind was blank and tbh, I just wanted a cool silkscreen too lol. 
 
 ![Shego](/assets/banner2.jpg)
 
-I do love the **Ajazz AK820 Pro** and it's clean design, along with the added screen. I do wish it could run QMK/VIA firmware though. Another board I tested was the **GamaKay TK75HEV2** I wanted my board to be quite similar to both, but 
+I do love the **Ajazz AK820 Pro** and it's clean design, along with the added screen. I do wish it could run QMK/VIA firmware though. Another board I tested was the **GamaKay TK75HEV2** I wanted my board to be quite similar to both, but have everything I've ever wanted. 
 
 <p></p>
 Features I wanted
@@ -38,7 +38,7 @@ I originally tried raw C, then riskable put me on Rust, but after creating a suc
 
 Oh yeah, to make my life easier, and save my poor fingers from typing `qmk compile -kb shego75_v1 -km default` a million times, I developed a VS Code extension, a small one-click button that compiles QMK firmware. Find it [here](https://github.com/Charading/QMK-Compile-button-for-VS-Code).
 
-The ESP32 portion is written in C++ inside Arduino IDE.
+The screen/ESP32 portion is written in C++ inside Arduino IDE.
 
 ###### The Sensors 🧲
 After doing extensive research and testing with breadboards and Raspberry Pi Pico boards, I settled on using the RP2040 for my base MCU. I was going to use HC4067s, but I didn't really understand multiplexer cascading so after looking for a bit, I stumbled upon the ADG732 so I now use three of these, which means I do not need to use a MCP3208 external ADC *(my god, I recently was trying to get this to work using my sensor-to-matrix logic in QMK but couldn't for the life of me)* and I could use only 3 of the 4 analog pins.
@@ -73,7 +73,7 @@ export function LedGroups() {
 	];
 }
 ```
- It is designed as one continuous strip though, on `GP17`, but there is a transistor pair on `GP23` which is controlled by the `LED_TOG` custom keycode. 
+ It is designed as one continuous strip though, on `GP17`, but there is a transistor pair on `GP23` which is controlled by the `LED_TOG` custom keycode and cuts power to the LEDs.
 
  When focused on the screen/layer 3 toggled, the status bar will turn blue.
 
@@ -102,7 +102,7 @@ I want a way to use QMK's `raw_hid_receive` and `raw_hid_send` so I can have my 
 
 I managed to create a small Electron app that can communicate with the board, but it's still in development.
 
-I realised that SignalRGB consumes packets so I had to edit the `signalrgb.c` and `signalrgb.h` to not drop packets it doesn't recognise but I am still stuck because I can't get my app to even toggle GPIO23 which toggles power to the lighting. *I did manage to do it once but I reverted back because I have up, but this was before I changed the SRGB module. Now even with SRGB disabled, I still can't get my keyboard to toggle and I don't know what the issue is.
+I realised that SignalRGB consumes packets so I had to edit the `signalrgb.c` and `signalrgb.h` to not drop packets it doesn't recognise but I am still stuck because I can't get my app to even toggle GPIO23 which toggles power to the lighting. *I did manage to do it once but I reverted back because I have up, but this was before I changed the SRGB module. Now even with SRGB disabled, I still can't get my keyboard to toggle and I don't know what the issue is.*
 
 I just want to be able to talk to my board over HID and then I can make it similar to all those Chinese OEM clone web apps and software, Wootings web app etc.
 
@@ -113,20 +113,20 @@ If anyone more knowledgable can assist or point me in the right direction that w
 
 ![case](assets/case.gif)
 
-At the moment I am using a prototype case that I printed out of ELEGOO PLA-CF. I could technically get this machined by JLCCNC but I do not wish to increase spending. I would rather wait and see if I can finalise my case beforehand to minimise revisions. 
+At the moment I am using a prototype case that I printed out of ELEGOO PLA-CF. I could technically get this machined by JLCCNC but I do not wish to increase spending at this time. I would rather wait and see if I can finalise my case beforehand to minimise revisions and metallic waste. 
 
 I do wish I could find the smaller form factor ball catches that the **Lucky65** and many other newer boards use but I can't find somewhere that can machine them or find them aftermarket. So at the moment, it is a two piece design, designed similarily to the **CIDOO C75** and **TK75HEV2** but with the shaping somewhat resembling the **Tofu65** because I like the sharp edges. I really hate the designs that have such baby rounded edges like the **AK820 Pro MAX**.
 
-It uses a daughterboard I designed, but maybe a future design I would want to to use pogo pin connectors like the **Lucky65 V3** but I would have to do some testing to see that the magnetics do not interfer with normal keyboard function.
+It uses a daughterboard I designed, but maybe a future design I would want to to use pogo pin connectors like the **Lucky65 V3** but I would have to do some testing to see that the magnets do not interfer with normal keyboard function.
 
 
 #### PCB 🟢
 ![pcb](assets/pcb_spin.gif)
 
-Just used KiCad, I kept having issues using the standalone ESP32-PICO-D4 and flashing it *(maybe it's because I was lazy and didn't implement a USB-UART chip)* so I did some looking and found the [TinyPICO Nano](https://github.com/tinypico) to help test with firmware and stuff, just to be safe I moved designed [this adapter](https://github.com/Charading/flexypin_adapters_hw/tree/main/TinyPICO-NANO_flexypin) so interfacing would be easier. `GP0` and `GP1` are broken out for UART0 debug.
+Just used KiCad, I kept having issues using the standalone ESP32-PICO-D4 and flashing it *(maybe it's because I was lazy and didn't implement a USB-UART chip)* so I did some looking and found the [TinyPICO Nano](https://github.com/tinypico). To help test with firmware and stuff, just to be safe and not rely on my firmware working with it just because it worked on the ESP32-WROOM-32 dev module, I designed [this adapter](https://github.com/Charading/flexypin_adapters_hw/tree/main/TinyPICO-NANO_flexypin) so interfacing and testing would be easier. The RP2040's `GP0` and `GP1` are broken out for UART0 debug.
 
 ### Future Updates/Roadmap 🚗
-- I haven't really been focused on it much with this board, but I would be looking to implenting tri-mode or at least 2.4GHz wireless with a dongle. For a future project I want to design a drop in replacement pcb for the **Lucky65 V2** or **Lucky65 V3** running my custom magnetic QMK firmware.
+- I haven't really been focused on it much with this board, but I will be looking to implent tri-mode or at least 2.4GHz wireless with a dongle. For a coming soon, future project I want to design a drop in replacement pcb for the **Lucky65 V2** or **Lucky65 V3** running my custom magnetic QMK firmware because the cases are gorgeous and such a steal!
 
 - Software/web app (most likely Electron powered)
 - Implement GIF upload over USB 
