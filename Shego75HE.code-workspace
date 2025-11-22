@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../VS Code/rust/shego-v1"
+		},
+		{
+			"path": "../VS Code/rust/shego-V2"
+		}
+	]
+}

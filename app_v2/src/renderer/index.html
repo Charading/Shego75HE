@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Shego App v2</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 1rem 2rem;
+        background: #0d1117;
+        color: #e6edf3;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .device {
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .device span {
+        display: inline-block;
+        min-width: 8rem;
+      }
+      button {
+        background: #238636;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        padding: 0.35rem 0.75rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Shego Keyboard Monitor</h1>
+    <div id="device-list"></div>
+
+    <script>
+      async function refreshDevices() {
+        const devices = await window.shego.listDevices();
+        const list = document.getElementById("device-list");
+        list.innerHTML = "";
+        devices.forEach((device) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "device";
+          wrapper.innerHTML = `
+            <div><span>Product</span>${device.product}</div>
+            <div><span>Serial</span>${device.serialNumber ?? "n/a"}</div>
+            <div><span>PID</span>0x${device.pid.toString(16).padStart(4, "0")}</div>
+            <div><span>Path</span>${device.path}</div>
+            <button data-path="${device.path}">Ping</button>
+          `;
+          wrapper.querySelector("button").addEventListener("click", () => {
+            const payload = new Uint8Array(32);
+            payload[0] = 0x21; // GET_QMK_VERSION for sanity check
+            window.shego.sendRaw(device.path, payload);
+          });
+          list.appendChild(wrapper);
+        });
+      }
+
+      refreshDevices();
+      setInterval(refreshDevices, 2000);
+    </script>
+  </body>
+</html>
