@@ -1,5 +1,10 @@
 # Shego75HE - Dev Branch Developer Diary
 
+## 2026-01-21
+
+Over the past few months, I’ve been doing a lot of deep architectural work on this project — rethinking the firmware, the screen integration, and the overall direction of the keyboard. Rather than trying to summarise all of that here, I’ve written a much more detailed design journal that explains the decisions, dead ends, and turning points properly. If you’re interested in the full context behind these changes, see `update.md` for the complete write-up.
+
+
 ## 2025-11-21
 - Added vendor-class USB descriptors and host-side vendor/bulk support (experimental).
   - Firmware: descriptors added and a `vendor_bridge` stub introduced so host tools can detect a vendor interface; shared HID processing extracted into `hid_process_received_buffer()` to unify raw-HID and vendor paths.
