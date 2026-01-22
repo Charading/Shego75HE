@@ -2,6 +2,7 @@
 <h1 style="margin-bottom:0;">Shego75HE</h1>
 <h4 style="margin-top:0;">Probably the first magnetic keyboard running QMK firmware.</h4>
 
+> 📖 **[Read the full development story →](UPDATE.md)**
 
 ![Shego](/assets/banner.jpg)
 
