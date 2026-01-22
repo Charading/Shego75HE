@@ -2,7 +2,7 @@
 <h1 style="margin-bottom:0;">Shego75HE</h1>
 <h4 style="margin-top:0;">Probably the first magnetic keyboard running QMK firmware.</h4>
 
-> 📖 **[Read the lastest update →](UPDATE.md)**
+> 📖 **[Read the latest update →](UPDATE.md)**
 
 ![Shego](/assets/banner.jpg)
 
@@ -282,4 +282,5 @@ The ESP32-PICO-D4 is responsible for the **high-level peripheral side**, primari
 I have put the app up online if you want to browse through, WebHID isn't implemented properly since I primarily focused on USB HID but do check out the themes in the Settings tab!
 
 Link: [nova-8tt.pages.dev](https://nova-8tt.pages.dev)
+
 
